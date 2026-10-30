@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>组织智能体 · 内部演示</title>
+<style>
+:root{
+  --bg:#EDF0F3;--surface:#fff;--ink:#17233B;--muted:#5B6577;--faint:#8A93A3;--line:#DCE1E7;--soft:#F5F7F9;
+  --blue:#2D5BE3;--twin:#0F8B7D;--twin-soft:#E4F3F0;--twin-line:#BBDFD8;--me:#B7720B;--me-soft:#FBF1DF;--me-line:#EBCB93;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font:14px/1.6 var(--sans);color:var(--ink);background:var(--bg);display:grid;grid-template-rows:56px 1fr;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;gap:28px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{font:600 15px var(--sans);white-space:nowrap}
+.brand small{font-weight:400;color:var(--muted);margin-left:8px}
+.acts{display:flex;gap:2px;flex:1;justify-content:center}
+.acts button{padding:6px 12px;border-radius:6px;color:var(--muted);white-space:nowrap}
+.acts button b{font-weight:600;margin-right:6px;color:var(--faint)}
+.acts button:hover{background:var(--soft);color:var(--ink)}
+.acts button[aria-current="true"]{background:var(--ink);color:#fff}
+.acts button[aria-current="true"] b{color:#9FB0CC}
+.top .tool{padding:6px 12px;border:1px solid var(--line);border-radius:6px;color:var(--muted);white-space:nowrap}
+.top .tool:hover{color:var(--ink);border-color:#b9c1cc}
+
+/* ---------- layout ---------- */
+.main{display:grid;grid-template-columns:1fr 400px;min-height:0}
+.stage{position:relative;overflow:hidden;min-width:0}
+.rig{position:absolute;left:50%;top:50%;display:flex;gap:40px;align-items:flex-start;transform-origin:center center}
+.dev{display:flex;flex-direction:column;align-items:center;gap:12px}
+.cap{font-size:14px;color:var(--muted)}
+.cap b{color:var(--ink);font-weight:600;margin-right:6px}
+
+/* ---------- guide ---------- */
+.guide{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.g-scroll{flex:1;overflow:auto;padding:28px 28px 16px}
+.g-act{font-size:13px;color:var(--muted)}
+.g-title{font:600 25px/1.35 var(--serif);margin:6px 0 10px;letter-spacing:.5px}
+.g-judge{font-size:14px;line-height:1.75;color:var(--muted);padding-bottom:18px;border-bottom:1px solid var(--line)}
+.g-steps{list-style:none;margin:16px 0 4px}
+.g-steps li{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:7px 8px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:13.5px;line-height:1.55}
+.g-steps li:hover{background:var(--soft)}
+.g-steps li.now{background:var(--soft);color:var(--ink)}
+.g-steps li.done{color:var(--faint)}
+.tag{align-self:start;margin-top:1px;font-size:12px;text-align:center;border-radius:4px;padding:0 4px;white-space:nowrap}
+.tag.twin{color:var(--twin);background:var(--twin-soft)}
+.tag.me{color:var(--me);background:var(--me-soft)}
+.tag.scene{color:var(--muted);background:#EEF0F3}
+.g-steps li .who{display:block;font-size:12px;color:var(--faint)}
+.g-steps li.now .who{color:var(--muted)}
+.g-say{margin:18px 0 4px;font:16.5px/1.85 var(--serif);color:var(--ink);min-height:4.5em}
+.g-say .tag{display:inline-block;font-family:var(--sans);margin-right:8px;vertical-align:2px}
+.g-more details{border-top:1px solid var(--line)}
+.g-more summary{list-style:none;padding:12px 0;font-size:13.5px;color:var(--muted);cursor:pointer;display:flex;justify-content:space-between}
+.g-more summary::after{content:"+";color:var(--faint)}
+.g-more details[open] summary::after{content:"−"}
+.g-more .body{padding:0 0 14px;font-size:13.5px;color:#3A4558}
+.g-more .body li{margin:0 0 6px 18px}
+.g-more .qa dt{font-weight:600}
+.g-more .qa dd{margin:2px 0 10px;color:var(--muted)}
+.g-foot{display:flex;gap:8px;align-items:center;padding:14px 28px;border-top:1px solid var(--line)}
+.g-foot .count{font-size:13px;color:var(--faint);margin-right:auto}
+.g-foot button{padding:8px 14px;border-radius:6px;border:1px solid var(--line)}
+.g-foot button:hover{border-color:#b9c1cc}
+.g-foot .next{background:var(--ink);color:#fff;border-color:var(--ink)}
+.g-foot .next.me{background:var(--me);border-color:var(--me)}
+.g-foot button[disabled]{opacity:.35;cursor:default}
+
+/* ---------- device shells ---------- */
+.phone{width:375px;height:780px;border-radius:46px;border:11px solid #1C2333;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 60px -30px rgba(23,35,59,.45)}
+.ph-status{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:4px 26px 0;font-size:13px;font-weight:600}
+.ph-head{flex:none;display:flex;align-items:center;justify-content:space-between;padding:6px 18px 10px}
+.ph-head h1{font-size:20px;font-weight:600}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:600;background:#E8ECF4;color:var(--ink);flex:none}
+.ph-body{flex:1;overflow:hidden;padding:4px 16px 12px;display:flex;flex-direction:column;gap:12px}
+.ph-tabs{flex:none;display:flex;border-top:1px solid var(--line);padding:6px 0 18px}
+.ph-tabs span{flex:1;text-align:center;font-size:11px;color:var(--faint)}
+.ph-tabs span.on{color:var(--blue);font-weight:600}
+.ph-tabs i{display:block;width:20px;height:20px;margin:2px auto 1px;border-radius:6px;border:1.6px solid currentColor}
+
+.browser{width:1100px;height:720px;border-radius:12px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;border:1px solid #CDD3DC;box-shadow:0 30px 60px -32px rgba(23,35,59,.45)}
+.chrome{height:36px;flex:none;display:flex;align-items:center;gap:7px;padding:0 14px;background:#F3F5F8;border-bottom:1px solid var(--line)}
+.chrome i{width:11px;height:11px;border-radius:50%;background:#D5DAE1}
+.chrome span{margin-left:16px;font-size:12px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 14px}
+.app{flex:1;display:grid;grid-template-columns:208px 1fr;min-height:0}
+.side{background:var(--ink);color:#B9C4D8;padding:18px 14px;display:flex;flex-direction:column;gap:3px;font-size:13.5px}
+.side .logo{color:#fff;font-weight:600;font-size:15px;padding:0 8px 16px;display:flex;align-items:center;gap:8px}
+.side .logo i{width:22px;height:22px;border-radius:6px;background:var(--blue)}
+.side .item{padding:7px 10px;border-radius:6px}
+.side .item.on{background:rgba(255,255,255,.1);color:#fff}
+.side .sec{font-size:12px;color:#7A88A3;padding:16px 10px 6px}
+.side .me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:10px 6px 0;border-top:1px solid rgba(255,255,255,.1)}
+.side .me .avatar{background:#2C3B5A;color:#fff}
+.side .me small{display:block;color:#7A88A3;font-size:12px}
+.work{display:flex;flex-direction:column;min-width:0;min-height:0}
+.crumb{height:46px;flex:none;display:flex;align-items:center;gap:8px;padding:0 24px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.crumb b{color:var(--ink);font-weight:600}
+.split{flex:1;display:grid;grid-template-columns:1fr 300px;min-height:0}
+.canvas{overflow:hidden;padding:26px 44px;min-width:0}
+.panel{border-left:1px solid var(--line);background:#FAFBFC;padding:14px 16px;overflow:hidden;font-size:13px}
+.ptabs{display:flex;gap:16px;border-bottom:1px solid var(--line);margin:0 -16px 12px;padding:0 16px}
+.ptabs span{padding:6px 0 9px;color:var(--muted)}
+.ptabs span.on{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px var(--blue)}
+
+/* ---------- shared product parts ---------- */
+.bubble{align-self:flex-end;max-width:84%;background:#E9EEFB;border-radius:16px 16px 4px 16px;padding:10px 13px;font-size:14px}
+.twinsay{font-size:14px;line-height:1.65}
+.twinsay .lbl,.proc .lbl{font-size:12px;color:var(--twin);display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.spark{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;background:var(--twin);display:inline-block}
+.proc{border-left:3px solid var(--twin);background:var(--twin-soft);border-radius:4px 10px 10px 4px;padding:11px 14px}
+.proc ol{list-style:none;display:flex;flex-direction:column;gap:7px;margin-top:6px}
+.proc li{font-size:13.5px;line-height:1.55;display:grid;grid-template-columns:14px 1fr;gap:6px;transition:opacity .35s,transform .35s}
+.proc li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--twin);margin-top:7px}
+.reveal > .pending,.reveal .pending{opacity:0;transform:translateY(4px)}
+.src{display:inline-block;font-size:12px;line-height:18px;color:var(--twin);border:1px solid var(--twin-line);background:#fff;border-radius:4px;padding:0 6px;margin-left:4px;vertical-align:1px;cursor:pointer;white-space:nowrap}
+.src:hover{background:var(--twin-soft)}
+.est{font-size:12px;color:var(--muted);border:1px dashed #B5BDC9;border-radius:4px;padding:0 5px;margin-left:4px}
+.card{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:#fff}
+.card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.card .meta{font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center}
+.go{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:42px;padding:0 18px;border-radius:10px;font-weight:600;background:var(--me);color:#fff}
+.go.full{width:100%}
+.go.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.go.sm{height:34px;font-size:13px;border-radius:8px;padding:0 14px}
+.go.armed{animation:ring 1.8s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(183,114,11,.45)}70%{box-shadow:0 0 0 12px rgba(183,114,11,0)}100%{box-shadow:0 0 0 0 rgba(183,114,11,0)}}
+.done-mark{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--me);font-weight:600}
+.done-mark::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--me)}
+.composer{flex:none;margin:0 14px 10px;border:1px solid var(--line);border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.composer .txt{font-size:14px;line-height:1.6}
+.composer .hint{font-size:12px;color:var(--faint)}
+.wave{display:inline-flex;gap:2px;align-items:center;height:14px;vertical-align:-2px;margin-right:6px}
+.wave i{width:2px;background:var(--me);border-radius:2px}
+
+/* document */
+.doc-h{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.doc-h h2{font-size:22px;font-weight:600}
+.state{font-size:12px;border-radius:4px;padding:1px 7px;white-space:nowrap}
+.state.twin{background:var(--twin-soft);color:var(--twin)}
+.state.me{background:var(--me-soft);color:var(--me)}
+.state.ok{background:#E8EEF9;color:var(--blue)}
+.doc-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.para{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:9px 0;border-top:1px solid #EEF1F4;font-size:14px;line-height:1.75}
+.para h4{font-size:14px;font-weight:600;margin-bottom:2px}
+.kind{font-size:12px;text-align:center;border-radius:4px;height:20px;line-height:20px;margin-top:3px}
+.kind.fact{background:#EEF1F5;color:var(--ink)}
+.kind.judge{background:var(--twin-soft);color:var(--twin)}
+.kind.check{border:1px dashed #A9B2BF;color:var(--muted)}
+.cap3{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cap3 span{border:1px solid var(--line);border-radius:6px;padding:2px 10px;font-size:13px}
+.cap3 span.later{color:var(--faint);text-decoration:line-through}
+.cap3 span.moved{border-style:dashed;color:var(--muted)}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;font-size:13px}
+.flow span{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 9px}
+.flow span.key{border-color:var(--twin-line);background:var(--twin-soft);color:var(--twin)}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+.tbl th{text-align:left;font-weight:500;color:var(--muted);font-size:12.5px;padding:7px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 8px;border-bottom:1px solid #EEF1F4;vertical-align:top}
+.verdict{font-weight:600}
+.verdict.y{color:#1F7A44}.verdict.c{color:#9A6A07}.verdict.n{color:#A1453A}
+.suggest{border:1px solid var(--twin-line);background:var(--twin-soft);border-radius:10px;padding:12px 14px;font-size:13.5px}
+.actbar{display:flex;gap:10px;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.actbar .note{font-size:12.5px;color:var(--muted);margin-right:auto}
+.pk{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.pitem{padding:8px 0;border-top:1px solid #EEF1F4;font-size:13px;line-height:1.55}
+
+/* overview */
+.ov{width:1180px;display:flex;flex-direction:column;gap:22px}
+.ov-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}
+.ov-col{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px 24px}
+.ov-col h3{font:600 22px var(--serif);margin:18px 0 4px}
+.ov-col p{color:var(--muted);font-size:14px}
+.ov-col ul{list-style:none;margin-top:14px;border-top:1px solid var(--line)}
+.ov-col li{padding:9px 0;border-bottom:1px solid #EEF1F4;font-size:14px;display:flex;gap:14px}
+.ov-col li b{font-weight:600;min-width:64px}
+.mini{height:150px;border-radius:10px;background:var(--soft);display:grid;place-items:center}
+.mini .m-phone{width:76px;height:136px;border:5px solid #1C2333;border-radius:16px;background:#fff;padding:14px 8px;display:flex;flex-direction:column;gap:6px}
+.mini .m-pc{width:230px;height:128px;border:1px solid #CDD3DC;border-radius:6px;background:#fff;display:grid;grid-template-columns:44px 1fr;overflow:hidden}
+.mini .m-pc .s{background:var(--ink)}
+.mini .m-pc .d{padding:14px;display:flex;flex-direction:column;gap:6px}
+.mini .m-gr{background:#0E1A2E}
+.bar{height:6px;border-radius:3px;background:#DCE1E7}
+.bar.t{background:var(--twin-line)}
+.bar.m{background:var(--me-line)}
+.ov-twin{background:var(--ink);color:#fff;border-radius:14px;padding:20px 28px;display:flex;align-items:center;gap:28px}
+.ov-twin h3{font:600 22px var(--serif);white-space:nowrap}
+.ov-twin p{color:#C9D2E3;font-size:15px}
+.ov-legend{display:flex;gap:26px;font-size:14px;color:var(--muted);padding:0 4px}
+.ov-legend span{display:flex;align-items:center;gap:8px}
+.ov-legend i{width:10px;height:10px;border-radius:50%}
+
+
+
+/* source dialog */
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,92vw);box-shadow:0 30px 80px -20px rgba(23,35,59,.5);color:var(--ink)}
+dialog::backdrop{background:rgba(23,35,59,.35)}
+.dl-h{padding:20px 24px 12px;border-bottom:1px solid var(--line)}
+.dl-h small{color:var(--twin);font-size:12.5px}
+.dl-h h3{font-size:18px;margin-top:2px}
+.dl-h .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+.dl-b{padding:16px 24px;font-size:14px;line-height:1.85;max-height:52vh;overflow:auto}
+.dl-b p{margin-bottom:10px}
+.dl-b mark{background:var(--twin-soft);color:inherit;box-shadow:inset 0 -2px var(--twin-line);padding:0 2px}
+.dl-f{padding:12px 24px 18px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
+.dl-f button{padding:7px 16px;border:1px solid var(--line);border-radius:6px;color:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){.go.armed{animation:none;box-shadow:0 0 0 3px rgba(183,114,11,.35)}.proc li{transition:none}}
+@media (max-width:1100px){.main{grid-template-columns:1fr 340px}.acts button{padding:6px 8px}}
+
+/* Responsive working surfaces: preserve readable text instead of shrinking devices. */
+.main{grid-template-columns:minmax(0,1fr) 340px}
+.top{gap:12px;padding:0 16px}.brand small{display:none}.acts button{padding:6px 9px}
+.rig{gap:20px}.browser{width:var(--desk-width,1000px);height:var(--device-height,720px)}
+.phone{height:var(--phone-height,780px)}
+.app{grid-template-columns:156px minmax(0,1fr)}.side{padding:16px 10px}.side .item{padding:7px 8px}
+.canvas{padding:20px 24px}.split{grid-template-columns:minmax(0,1fr) 220px}.panel{padding:12px}
+.ptabs{gap:10px;margin-left:-12px;margin-right:-12px;padding:0 12px;flex-wrap:wrap}
+.doc-h{flex-wrap:wrap;gap:6px 12px}.doc-h h2{font-size:20px}.doc-sub{margin-bottom:12px}
+.para{gap:8px;padding:7px 0;line-height:1.65}.actbar{margin-top:12px;padding-top:10px}
+.ov{width:var(--desk-width,1000px);gap:16px}.ov-cols{gap:14px}.ov-col{padding:16px}.ov-col li{gap:8px}.ov-col li b{min-width:70px}.ov-legend{gap:16px;font-size:13px}
+.ph-tabs span{font-size:12px}.ph-body{gap:10px}.ph-body .pitem{padding:6px 0}.ph-body .pk{margin-bottom:2px}
+.src{color:var(--blue);border-color:#CCD7F5}.src:hover{background:#EDF2FF}
+.flow span.key{color:var(--ink);background:var(--soft);border-color:var(--line)}
+.stack{display:flex;flex-direction:column;gap:12px}.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.cols.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.section-title{font-size:16px;margin-bottom:8px}.subtle{color:var(--muted);font-size:13px}.section-gap{margin-top:14px}
+.info-line{padding:8px 0;border-bottom:1px solid var(--line)}.info-line:last-child{border-bottom:0}
+.old{color:#7C5260;text-decoration:line-through}.new{background:#EDF2FF;color:#244BA9;padding:7px 9px;border-left:3px solid var(--blue);margin-top:6px}
+.issue{border-left:3px solid #B53D48;background:#FCF0F1;padding:12px;border-radius:6px}.issue.warning{border-color:#A18B00;background:#F9F8DF}.issue h3{font-size:15px;margin-bottom:5px}
+.issue .fix{margin-top:6px;font-size:13px}.state.blocked{color:#B12F42;background:#FCECF0}.state.wait{color:#665C79;background:#F0EDF6}
+.matrix td,.matrix th{text-align:center;padding:8px 6px}.matrix td:first-child,.matrix th:first-child{text-align:left}.matrix td:not(:first-child){color:var(--muted)}
+.link-button{color:var(--blue);text-decoration:underline;text-underline-offset:3px;font-size:13px}.record{padding:10px 12px;background:var(--soft);border-radius:8px}
+.counts{display:flex;gap:12px;margin:12px 0}.counts>div{flex:1;background:var(--soft);padding:10px;border:1px solid var(--line);border-radius:8px}.counts strong{font-size:22px;margin-right:6px}
+.discussion{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}.discussion .secretary{border-left:1px solid var(--line);padding-left:18px}.chat{padding:10px 0;border-bottom:1px solid var(--line)}.chat b{display:block;font-size:13px;margin-bottom:5px}.chat p{background:var(--soft);padding:10px;border-radius:0 10px 10px 10px}
+.waiting{border:1px solid #D1C9DE;background:#F3F0F8;color:#514366;padding:10px;border-radius:8px;font-weight:600}
+.handover{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px}.handover .info-line{padding:7px 0;font-size:13px}.private{background:var(--soft);border:1px dashed #B7C0CF;padding:12px;border-radius:8px;align-self:start}
+.graph{background:#0E1A2E;border-radius:10px;padding:12px;color:#E9EFFA}.graph-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.graph-layout.detail{grid-template-columns:minmax(0,1fr) 230px}.graph svg{width:100%;display:block}.graph text{font-family:var(--sans);fill:#E9EFFA;font-size:13px}.graph .edge{fill:none;stroke:#48566F;stroke-width:1.5}.graph .node rect{fill:#1B2A43;stroke:#48566F}.graph .node.blocked rect{fill:#542333;stroke:#FF7E94;stroke-width:2}.graph .node.selected rect{fill:#254EAA;stroke:#A9C1FF;stroke-width:2}.graph [data-drill]{cursor:pointer}.graph [data-drill]:focus{outline:2px solid #A9C1FF}.graph .minor{fill:#B4C1D6;font-size:12px}.graph-key{font-size:12px;display:flex;gap:14px;margin-top:8px}.graph-key i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.capability{table-layout:fixed}.capability th:nth-child(1){width:26%}.capability th:nth-child(2){width:27%}.capability th:nth-child(3){width:18%}.capability th:nth-child(4){width:29%}.capability td{font-size:13px;padding:9px 7px}.capability .link-button{font-size:14px;text-align:left;font-weight:600}.path{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.path span{padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--soft)}.closing{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font:20px/1.6 var(--serif)}
+@media(max-width:1300px){.main{grid-template-columns:minmax(0,1fr) 300px}.g-scroll{padding:20px}.g-foot{padding:12px 16px}.g-title{font-size:23px}.canvas{padding:16px 20px}.side{font-size:13px}.app{grid-template-columns:144px minmax(0,1fr)}.top{padding:0 12px}.acts button{padding:6px 7px}}
+@media(max-height:780px){.chrome{height:30px}.crumb{height:36px;padding:0 18px}.canvas{padding:14px 18px}.side{padding-top:12px}.doc-h h2{font-size:18px}.doc-sub{font-size:12px;margin-bottom:8px}.para{font-size:13px;padding:5px 0;line-height:1.55}.para h4{font-size:13px}.actbar{margin-top:8px;padding-top:8px}.tbl td{padding:8px 6px}.tbl th{padding:6px}.stack{gap:9px}.cols{gap:9px}.card{padding:10px 12px}.section-gap{margin-top:10px}.info-line{padding:6px 0}.ph-status{height:26px}.ph-head{padding:4px 14px 6px}.ph-head h1{font-size:18px}.ph-body{padding:4px 12px 8px;gap:8px}.ph-body .pitem{padding:4px 0;font-size:12px;line-height:1.5}.ph-body .twinsay,.ph-body .bubble{font-size:13px}.ph-body .proc{padding:8px 10px}.ph-body .proc li{font-size:12px;line-height:1.5}.ph-body .proc ol{gap:5px}.ph-tabs{padding:4px 0 10px}.ph-tabs i{width:16px;height:16px}.ph-body .src{font-size:12px;line-height:16px;padding:0 4px}.ph-body .card h3{font-size:14px}.go{height:36px}.ov-col{padding:12px}.ov-col h3{font-size:20px}.ov-col li{padding:7px 0;font-size:13px}.mini{height:135px}.ov-twin{padding:14px 18px}.g-say{font-size:16px}.handover .info-line{padding:5px 0}.discussion .chat{padding:7px 0}.discussion .chat p{padding:8px}.capability td{padding:7px 6px}.graph{padding:10px}}
+
+
+/* 各幕共用：业务信息优先，颜色保持操作含义。 */
+.task-copy{font-size:13px;line-height:1.85}.task-copy .src{margin-left:0}
+.compact-lines .pitem{font-size:13px;line-height:1.6}
+.muted-options{color:var(--muted);gap:24px;justify-content:center;font-size:13px}
+.material-list{display:flex;gap:10px;flex-wrap:wrap}.material-list span{padding:7px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+.change-record summary{cursor:pointer}.change-record[open] summary{margin-bottom:6px}
+.selected-row{background:#EEF3FF}.path .current{background:#EEF3FF;border-color:#BECFF5}
+.replacement{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:8px 0;font-size:13px}
+.task-detail{font-size:13px}.graph .node.accepted rect{fill:#25354F;stroke:#96ADD4}.graph .node.active rect{stroke:#6C91FF}.graph .node.due rect,.graph .node.waiting-node rect{stroke:#BDA9DB}
+/* SVG 内字号与实际显示宽度匹配，避免图谱缩放后小于 12px。 */
+.graph-layout.detail{grid-template-columns:minmax(0,1fr) 198px;gap:12px}
+.graph-layout.detail .graph svg{overflow:visible}
+@media(max-height:780px){
+ .handover .info-line{font-size:12px;line-height:1.45;padding:4px 0}.handover{gap:12px}
+ .task-copy{font-size:12px;line-height:1.7}.task-copy .src{line-height:16px}
+ .discussion{gap:12px;font-size:12px;line-height:1.5}.discussion .secretary{padding-left:12px}
+ .discussion .info-line{padding:5px 0}.discussion .stack{gap:6px}.discussion .record,.discussion .issue{padding:8px}
+ .counts{margin:8px 0;gap:8px}.counts>div{padding:6px}.counts strong{font-size:18px}
+ .capability td{font-size:12px;line-height:1.45;padding:6px}.capability th{font-size:12px}.capability .link-button{font-size:12px}
+ .path{margin:6px 0;gap:6px}.path span{padding:5px 8px;font-size:12px}
+ .replacement{gap:10px;margin:6px 0;font-size:12px}.closing{font-size:18px;margin-top:8px;padding-top:8px}
+ .graph-layout.detail{grid-template-columns:minmax(0,1fr) 188px}.graph-layout.detail .info-line{padding:4px 0}.task-detail{font-size:12px}
+ .compact-lines .pitem{padding:4px 0;font-size:12px;line-height:1.5}
+ .ph-body .doc-h h2{font-size:16px}.ph-body .section-gap{margin-top:4px}
+ .ph-body .card{padding:8px 10px}.ph-body .info-line{padding:5px 0}
+}
+
+
+.graph{padding:8px}.graph text,.graph .minor{font-size:13px}.graph-key{line-height:1.3;margin-top:4px;gap:10px}
+.capability.compact td{font-size:12px;line-height:1.45;padding:4px 6px}.capability.compact .link-button{font-size:12px}
+.capability.compact+.record{padding:8px 10px;font-size:13px}
+.capability.compact+.record .replacement{font-size:12px;line-height:1.5;margin:5px 0}
+@media(max-height:780px){.graph-layout.detail{grid-template-columns:minmax(0,1fr) 180px;gap:10px}.graph-layout.detail .graph-key{gap:7px;font-size:12px}}
+
+.canvas:has(.capability.compact)>.doc-sub{display:none}
+/* 收束 A 放射式图谱 */
+.graph{background:radial-gradient(ellipse at 18% 50%,#13304A 0%,#0E1A2E 55%,#0A1424 100%);padding:14px 14px 10px}
+.graph text.rg-t{fill:#EAF0FB;font-size:14px;font-weight:600}
+.graph text.rg-t.big{font-size:15px}
+.graph text.rg-s{font-size:12.5px}
+.graph .rg-e{fill:none;stroke:#3C557A;stroke-width:1.4}
+.graph .rg-dash{stroke-dasharray:3 4;stroke:#2F4C6A}
+.graph .rg-e-block{stroke:#8A3A4C}
+.graph .rg-node[data-drill]{cursor:pointer}
+.graph .rg-node[data-drill]:hover circle:nth-last-of-type(1){filter:brightness(1.3)}
+.graph .rg-node:focus{outline:none}.graph .rg-node:focus-visible circle{stroke:#fff}
+.graph .rg-pulse{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:rgPulse 2s ease-out infinite}
+@keyframes rgPulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(2.2)}}
+.graph-key{color:#B8C6DC}.graph-key .rg-hint{margin-left:auto;color:#7FD3C4}
+@media (prefers-reduced-motion:reduce){.graph .rg-pulse{animation:none;opacity:.6}}
+.capability.compact th{padding:4px 6px}
+.closing{font-family:var(--sans)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">组织智能体<small>内部演示 · 智慧发改 APP</small></div>
+  <nav class="acts" id="acts" aria-label="幕次"></nav>
+  <button class="tool" id="replay" title="快捷键 R">重演本幕</button>
+</header>
+<main class="main">
+  <section class="stage" id="stage"><div class="rig" id="rig"></div></section>
+  <aside class="guide" id="guide" aria-live="polite"></aside>
+</main>
+<dialog id="dlg"></dialog>
+
+<script>
+/* =====================================================================
+   一、出处（演示设定）。mark 为原文中需要高亮的段落序号。
+   ===================================================================== */
+const SRC = {
+  F1:{chip:'6/12 纪要',title:'智慧发改 · 信息中心对接会纪要',meta:'2026-06-12 · 周宁整理 · 已归入发改委事项',body:[
+    '参会：市发改委信息中心王主任、李工；我方周宁、林知。',
+    '王主任：委里所有 AI 应用调用委内数据，必须通过市数据中台的接口，不允许直连业务库，这是数据局的统一要求。',
+    '正式部署环境为市政务云，由信息中心统一申请资源。',
+    '下一步：我方 7 月提交初步思路，信息中心安排与数据中台的对接人。'],mark:[1,2]},
+  F2:{chip:'8/20 纪要',title:'分管副主任汇报会纪要',meta:'2026-08-20 · 周宁整理 · 已归入发改委事项',body:[
+    '分管副主任听取信息化工作汇报，关注两点：',
+    '一是项目审批进度要做到“一屏可见”，领导不想再层层要表；',
+    '二是政策问答必须给出原文出处，不能只给结论。',
+    '会后王主任补充：领导不看纯概念演示，汇报材料控制在 15 页以内。'],mark:[1,2,3]},
+  F3:{chip:'9 月调研',title:'发改 AI 可用数据项调研',meta:'2026-09 · 孟珂署名 · 组织数据口径 v1',body:[
+    '已具备：固定资产投资项目库 12.6 万条，日更，可经市中台接口调用。',
+    '已具备：政策文件库 3,400 份，可全文获取。',
+    '缺口一：审批节点时间戳 2024 年以后才完整，之前的项目只有起止日期。',
+    '缺口二：12345 涉发改诉求工单需向市政数局另行申请授权，目前未申请。'],mark:[0,1,2,3]},
+  W6:{chip:'11/6 微信',title:'王主任的微信',meta:'2026-11-06 · 周宁转发 · 发改委事项',body:[
+    '试点阶段可以先部署在我们委内机房，正式上线再上政务云。'],mark:[0]},
+  T2:{chip:'11/4 任务标准',title:'正式方案与可行分析 · 任务标准',meta:'2026-11-04 · 周宁确认发布',body:[
+    '方案：PPT 不超过 15 页（8/20 纪要）；必含市中台衔接架构图（6/12 纪要）、两项能力的场景和数据来源（9 月调研）、试点到上线的分阶段计划。',
+    '以“审批进度一屏可见”开场（8/20 纪要）；11/18 内部评审，11/20 交客户。'],mark:[0,1]},
+  DUTY:{chip:'公开职责',title:'孟珂 · 公开职责声明',meta:'数据分析 · 岗位公开信息',body:['数据来源授权与口径。'],mark:[0]},
+  AG2:{chip:'任务约定 v2',title:'12345 数据授权 · 协商记录',meta:'2026-11-04 · 孟珂发起，周宁确认',body:[
+    '约定 v1：11/14 前拿到 12345 授权。',
+    '授权需要委内审批，时间不由我方控制。',
+    '约定 v2：11/14 前提交申请并给出口径说明，授权结果单独跟踪。'],mark:[0,1,2]},
+  STD:{chip:'标准 v1.2',title:'首版 Demo 研发启动 v1.2',meta:'交付中心维护 · 关键节点标准',body:[
+    '五类材料：项目背景、产品定义、故事线、模拟数据、功能清单。',
+    '四项检查：完整、可用、一致、具备开工条件。',
+    'v1.2 变更原因：Q3 南山区项目因故事线与功能清单不一致返工两次，新增“逐条对应”检查。'],mark:[0,1,2]},
+  PACK4:{chip:'研发交付包',title:'宋瑾 · 研发交付包核验',meta:'2026-11-24 · 首版 Demo 研发启动',body:[
+    '故事线第 3 步仍是“诉求研判”，但已对齐为二期，功能清单里没有。',
+    '审批进度助手需要的“节点时间戳”字段，模拟数据里没有。'],mark:[0,1]},
+  XU4:{chip:'许朗工作积累',title:'许朗 · 技术储备与任务规划',meta:'2026-11-24 · 仅许朗本人分身使用',body:[
+    '可直接做：政策问答（许朗做过政数局知识库问答）。',
+    '需验证：市中台接口调用（未接过，测试账号预计 3 周才能拿到）。',
+    '需协作：审批时间戳口径，需要找孟珂。',
+    '演示日 12/12 可能赶不上；许朗附说明：“测试账号问题需要讨论。”'],mark:[0,1,2,3]},
+  MT5:{chip:'11/26 议定',title:'首版 Demo 的 AI 范围与市中台衔接 · 议定',meta:'2026-11-26 · 宋瑾发起共创',body:[
+    '首版采用“委内机房部署 + 市中台沙箱接口 + 脱敏样例数据”。',
+    '许朗：接沙箱接口。评判标准：政策问答 P95 响应 < 3 秒、答案 100% 附出处。',
+    '孟珂：沙箱开通，12/3。林知：更新架构图。',
+    '各方确认后由宋瑾最终确认，三个行动项转为正式任务，沿用任务承接规则。'],mark:[0,1,2,3]},
+  PREP5:{chip:'讨论准备单',title:'共创 · 已确认可分享的内容',meta:'2026-11-26 · 本次参与人确认分享',body:[
+    '已确认事实：数据经市中台（6/12 纪要）；11/6 新说法允许试点部署在委内机房；首版做能力①②。',
+    '许朗建议“先做独立演示”；待决定：演示用什么数据通道。',
+    '未完成承诺：孟珂的 12345 授权申请（已提交，等待审批）。',
+    '周宁分享王主任口头意见的摘要，并确认分享。'],mark:[0,1,2,3]},
+  JOB6:{chip:'岗位变动单',title:'智慧发改 · 项目经理岗位变动',meta:'2026-12-01 · 韩立批准 · 12/5 生效',body:[
+    '宋瑾：智慧发改项目经理 → 政数局 AIP 二期，12/5 生效；接任：陈默。',
+    '12/5 起收回宋瑾对本项目的访问；陈默获得项目经理岗位授权。'],mark:[0,1]},
+  HAND6:{chip:'宋瑾交接包',title:'智慧发改 · 宋瑾交接包',meta:'2026-12-01 · 原判断、承诺保留原署名',body:[
+    '客户背景：6/12 纪要、8/20 纪要、9 月调研、11/6 新说法；架构出处：11/26 议定。',
+    '交付标准来源：标准 v1.2、幕二任务标准。',
+    '联系人：王主任、信息中心李工；当前进度：方案已验收，Demo 研发中。',
+    '未完成任务：3 项（来自 11/26 共创）；已确认客户承诺：12/12 试点演示。',
+    '风险：12345 授权未批、沙箱开通依赖。',
+    '不纳入：宋瑾的 3 条个人工作笔记，如需贡献请本人选择。'],mark:[0,1,2,3,4,5]},
+  ORG:{chip:'组织能力记录',title:'组织能力 · 署名、背书与调用',meta:'2026-12-01 · 岗位授权范围内可调用',body:[
+    '首版 Demo 研发启动标准 v1.2：交付中心维护；宋瑾分身核验，本季另 4 个项目的产品经理分身调用。',
+    '政务 AI“数据经市中台”架构方法：林知署名，方案负责人背书；陈默分身回答追问、政数局项目方案分身调用。',
+    '发改委可用数据清单与口径：孟珂署名（9 月调研），许朗分身做难度分层。',
+    '市中台沙箱接入经验：许朗个人工作区，本人选择贡献；候选，待研发负责人背书。',
+    '发改委 AI 部署位置：一律上市政务云。部分失效：试点阶段被 11/6 新说法取代；正式上线仍有效。当前查询返回新版本，旧版可追溯。'],mark:[0,1,2,3,4]},
+  N0:{chip:'今日语音',title:'周宁的语音输入',meta:'2026-11-03 10:20 · 手机 · 转写',body:[
+    '发改委王主任刚来电话，智慧发改 APP 要升级加 AI，20 号前要一版建设方案和可行分析，找方案和产品一起弄。'],mark:[0]},
+  R1:{chip:'周宁 10:52 答复',title:'周宁的答复',meta:'2026-11-03 10:52 · 回复宋瑾的分身问询',body:[
+    '问：客户能否接受首版只上两项能力，诉求研判放到二期？',
+    '答：可以，王主任更在意 20 号能看到东西。'],mark:[1]},
+};
+
+/* =====================================================================
+   二、画面外壳
+   ===================================================================== */
+const src = id => `<button class="src" data-src="${id}">${SRC[id].chip}</button>`;
+const est = t => `<span class="est">${t}</span>`;
+const go  = (label, cls='') => `<button class="go ${cls}" data-go>${label}</button>`;
+const wave = () => `<span class="wave">${[6,12,8,14,5,10].map(h=>`<i style="height:${h}px"></i>`).join('')}</span>`;
+
+function phone({title, who='周', body='', composer='', tab='随身'}){
+  title = title || tab;
+  const tabs = ['随身','协同','分身'].map(t=>`<span class="${t===tab?'on':''}"><i></i>${t}</span>`).join('');
+  return `<div class="phone"><div class="ph-status"><span>10:20</span><span>5G ▮</span></div>
+    <div class="ph-head"><h1>${title}</h1><span class="avatar">${who}</span></div>
+    <div class="ph-body">${body}</div>${composer}<div class="ph-tabs">${tabs}</div></div>`;
+}
+function pc({who, name, role, nav='工作台', space='发改委 · 智慧发改 APP', crumb='', canvas='', panel=null, url='workbench'}){
+  const items = ['信息','项目任务','决策','分身培养'].map(n=>`<div class="item ${n===nav?'on':''}">${n}</div>`).join('');
+  const right = panel===null ? '' : `<aside class="panel">${panel}</aside>`;
+  return `<div class="browser"><div class="chrome"><i></i><i></i><i></i><span>工作分身 · ${name}</span></div>
+    <div class="app"><nav class="side"><div class="logo"><i></i>工作分身</div>
+      <div class="item ${nav==='工作台'?'on':''}">工作台</div>${items}
+      <div class="sec">工作区</div><div class="item ${nav==='工作台'?'on':''}">${space}</div>
+      <div class="me"><span class="avatar">${who}</span><div>${name}<small>${role} · 本人分身</small></div></div></nav>
+      <section class="work"><div class="crumb">${crumb}</div>
+        <div class="split" style="${panel===null?'grid-template-columns:1fr':''}"><div class="canvas">${canvas}</div>${right}</div></section></div></div>`;
+}
+function admin({nav='关键任务树', canvas=''}){
+  const items = ['关键任务树','组织能力','关键节点标准','岗位与授权'].map(n=>`<div class="item ${n===nav?'on':''}">${n}</div>`).join('');
+  return `<div class="browser"><div class="chrome"><i></i><i></i><i></i><span>工作分身 · 组织管理</span></div>
+    <div class="app"><nav class="side"><div class="logo"><i></i>组织管理</div>${items}
+      <div class="me"><span class="avatar">韩</span><div>韩立<small>交付中心负责人</small></div></div></nav>
+      <section class="work"><div class="crumb"><b>${nav}</b></div><div class="split" style="grid-template-columns:1fr"><div class="canvas">${canvas}</div></div></section></div></div>`;
+}
+/* =====================================================================
+   三、第一幕画面
+   ===================================================================== */
+const P_ZHOU = {who:'周', name:'周宁', role:'销售'};
+const P_LIN = {who:'林', name:'林知', role:'解决方案'};
+const P_SONG = {who:'宋', name:'宋瑾', role:'产品'};
+
+const zhouAsk = `<div class="bubble">发改委王主任刚来电话，智慧发改 APP 要升级加 AI，20 号前要一版建设方案和可行分析，找方案和产品一起弄。</div>`;
+
+function a1_voice(){
+  return phone({...P_ZHOU, body:`
+    <div class="twinsay"><div class="lbl"><i class="spark"></i>分身</div>今天 14:00 去财政局，资料目录核对稿已放在手机上。</div>`,
+    composer:`<div class="composer"><div class="hint">${wave()}语音转写中</div>
+      <div class="txt">发改委王主任刚来电话，智慧发改 APP 要升级加 AI，20 号前要一版建设方案和可行分析，找方案和产品一起弄。</div>
+      <div class="row" style="justify-content:flex-end">${go('发送','sm')}</div></div>`});
+}
+function a1_recall(){
+  return phone({...P_ZHOU, body:`${zhouAsk}
+    <div class="proc"><div class="lbl"><i class="spark"></i>周宁的分身</div>
+    <ol class="reveal">
+      <li><span>归入事项：发改委 · 智慧发改 APP</span></li>
+      <li><span>召回：AI 调数据必须经市数据中台，正式部署在政务云 ${src('F1')}</span></li>
+      <li><span>召回：分管领导要审批进度一屏可见，政策答案附原文出处 ${src('F2')}</span></li>
+      <li><span>召回：项目库、政策库可用；时间戳与 12345 授权有缺口 ${src('F3')}</span></li>
+      <li><span>带上项目信息：可能金额约 380 万 ${est('估计')}，目标是全市政务 AI 样板</span></li>
+      <li><span>按职责找到：林知（解决方案）、宋瑾（产品）</span></li>
+      <li><span>协作包已拟好，请你核对共享范围</span></li>
+    </ol></div>`});
+}
+function a1_package(){
+  return phone({...P_ZHOU, title:'核对协作包', body:`
+    <div class="card"><h3>发给 林知、宋瑾</h3><div class="meta">发改委 · 智慧发改 APP · 11/20 前交客户</div></div>
+    <div><div class="pk">会发送</div>
+      <div class="pitem"><b>新情况</b>　APP 升级加入 AI，需建设方案与实施可行分析 ${src('N0')}</div>
+      <div class="pitem"><b>背景</b>　数据经市中台，部署政务云 ${src('F1')}</div>
+      <div class="pitem"><b>背景</b>　进度一屏可见，答案附出处，汇报 15 页内 ${src('F2')}</div>
+      <div class="pitem"><b>背景</b>　可用数据与两处缺口 ${src('F3')}</div>
+      <div class="pitem"><b>项目</b>　可能金额约 380 万 ${est('估计')}</div></div>
+    <div><div class="pk">不发送</div>
+      <div class="pitem" style="color:var(--muted)">个人笔记：王主任对上一家供应商的交付不满意<br><span style="font-size:12px">仅你可见。需要共享时由你选择。</span></div></div>
+    <div style="margin-top:auto">${go('发给林知、宋瑾','full')}</div>`});
+}
+function linDoc({drafting=false, suggest=false, adopted=false, confirmed=false, armed=false}={}){
+  const caps = adopted
+    ? `<span>① 政策问答</span><span>② 审批进度助手</span><span class="moved">③ 诉求研判 · 二期候选</span>`
+    : suggest
+      ? `<span>① 政策问答</span><span>② 审批进度助手</span><span class="later">③ 诉求研判</span>`
+      : `<span>① 政策问答</span><span>② 审批进度助手</span><span>③ 诉求研判</span>`;
+  const state = confirmed ? `<span class="state ok">已确认回传 · 林知 15:40</span>`
+              : drafting ? `<span class="state twin">分身起草中</span>` : `<span class="state me">待你审阅</span>`;
+  const R = drafting ? ' class="reveal"' : '';
+  const sug = suggest ? `<div class="suggest" style="margin-bottom:14px"><div class="lbl" style="color:var(--twin);font-size:12px;margin-bottom:4px"><i class="spark"></i> 宋瑾的分身同步 · 修改建议</div>
+      <div class="reveal"><div>客户可接受首版只上两项 ${src('R1')}</div><div style="margin-top:4px">建议将 ③ 诉求研判调整为二期候选，架构与汇报页数相应减少。</div></div></div>` : '';
+  const bar = confirmed ? `<div class="actbar"><span class="note">已回传给周宁。修改记录保留：v0.1 分身起草 → v0.2 林知确认。</span></div>`
+            : armed ? `<div class="actbar"><span class="note">${adopted?'已采纳修改建议。':''}回传前由你确认内容与范围。</span>${go('确认回传')}</div>` : '';
+  return pc({...P_LIN, crumb:`工作台 / <b>发改委 · 智慧发改 APP</b> / 建设方案`, panel:`
+      <div class="ptabs"><span class="on">参考与范围</span><span>文件</span><span>本次记忆</span></div>
+      <div class="pk">周宁共享 · 11/3 10:24</div>
+      <div class="pitem">新情况 ${src('N0')}</div><div class="pitem">市中台与政务云 ${src('F1')}</div>
+      <div class="pitem">领导关注点 ${src('F2')}</div><div class="pitem">可用数据 ${src('F3')}</div>
+      <div class="pk" style="margin-top:14px">林知的积累</div>
+      <div class="pitem">政数局知识库方案 2025<br>财政局数据中台方案 2025<br><span style="color:var(--faint)">另 2 份政务方案</span></div>`,
+    canvas:`<div class="doc-h"><h2>智慧发改 APP · AI 建设方案</h2>${state}</div>
+      <div class="doc-sub">${drafting?'林知的分身结合周宁共享的背景和你过往 4 份政务方案起草':'初稿 v0.1 · 段落标明事实、判断与待核实'}</div>${sug}
+      <div${R}>
+      <div class="para"><span class="kind fact">事实</span><div><h4>建设目标</h4>APP 升级加入 AI，11/20 前提交建设方案，用于王主任向分管领导汇报 ${src('N0')}</div></div>
+      <div class="para"><span class="kind judge">判断</span><div><h4>AI 能力</h4><div class="cap3">${caps}</div></div></div>
+      <div class="para"><span class="kind fact">事实</span><div><h4>总体架构</h4><div class="flow"><span>APP</span>›<span>政务云 AI 服务</span>›<span class="key">市数据中台接口</span>›<span>项目库 · 政策库</span></div><div style="margin-top:4px">不直连业务库 ${src('F1')}</div></div></div>
+      <div class="para"><span class="kind fact">事实</span><div><h4>汇报表达</h4>以“审批进度一屏可见”开场，政策问答演示附原文出处，全文 15 页内 ${src('F2')}</div></div>
+      <div class="para"><span class="kind check">待核实</span><div><h4>开工前要确认</h4>12345 诉求工单授权 ${src('F3')}；市中台是否提供政策全文检索接口</div></div>
+      </div>${bar}`});
+}
+function songDoc({ask=false, confirmed=false, armed=false}={}){
+  const state = confirmed ? `<span class="state ok">已确认回传 · 宋瑾 16:05</span>` : `<span class="state me">待你审阅</span>`;
+  const askBox = ask ? `<div class="proc" style="margin-top:16px"><div class="lbl"><i class="spark"></i>宋瑾的分身 · 跨分身问询</div><ol class="reveal">
+      <li><span>向周宁的分身问询：客户能否接受首版只上两项，诉求研判放到二期？</span></li>
+      <li><span>周宁的分身：记忆中没有客户对此的表态，不作推测，已转给周宁本人</span></li>
+      <li><span>等待周宁答复</span></li></ol></div>` : '';
+  const bar = confirmed ? `<div class="actbar"><span class="note">已回传给周宁。修改记录保留：v0.1 分身起草 → v0.2 宋瑾确认。</span></div>`
+            : armed ? `<div class="actbar"><span class="note">③ 已按周宁答复改为二期。回传前由你确认。</span>${go('确认回传')}</div>` : '';
+  const third = armed||confirmed ? `<td><span class="verdict c">二期</span></td><td>授权申请后再评估 ${src('F3')}${src('R1')}</td>`
+                                 : `<td><span class="verdict n">首版不建议</span></td><td>12345 工单授权未申请 ${src('F3')}</td>`;
+  return pc({...P_SONG, crumb:`工作台 / <b>发改委 · 智慧发改 APP</b> / 实施可行分析`, panel:null,
+    canvas:`<div class="doc-h"><h2>智慧发改 APP · 实施可行分析</h2>${state}</div>
+      <div class="doc-sub">宋瑾的分身依据周宁共享的背景与可用数据调研起草，逐项给出结论与依据</div>
+      <table class="tbl"><thead><tr><th style="width:170px">能力</th><th style="width:120px">结论</th><th>依据与条件</th></tr></thead><tbody>
+        <tr><td>① 政策问答</td><td><span class="verdict y">可做</span></td><td>政策文件库 3,400 份可全文获取 ${src('F3')}；答案附原文出处 ${src('F2')}</td></tr>
+        <tr><td>② 审批进度助手</td><td><span class="verdict c">有条件</span></td><td>项目库经市中台可调 ${src('F1')}；节点时间戳 2024 年后才完整，历史项目只显示起止 ${src('F3')}</td></tr>
+        <tr><td>③ 诉求研判</td>${third}</tr></tbody></table>${askBox}${bar}`});
+}
+function a1_question(){
+  return phone({...P_ZHOU, tab:'协同', body:`
+    <div class="card"><div class="lbl" style="color:var(--twin);font-size:12px"><i class="spark"></i> 宋瑾的分身 · 需要你回答</div>
+      <h3 style="margin-top:6px">客户能否接受首版只上两项能力，诉求研判放到二期？</h3>
+      <div class="meta">你的分身没有找到客户对此的表态，没有替你回答。</div></div>
+    <div style="margin-top:auto"></div>`,
+    composer:`<div class="composer"><div class="txt">可以，王主任更在意 20 号能看到东西。</div>
+      <div class="row" style="justify-content:flex-end">${go('回复','sm')}</div></div>`});
+}
+function a1_received(){
+  return phone({...P_ZHOU, tab:'协同', body:`
+    <div class="twinsay"><div class="lbl"><i class="spark"></i>分身</div>两份初稿都经本人确认回传了，口径一致：首版做政策问答和审批进度助手，诉求研判列为二期。</div>
+    <div class="card"><h3>AI 建设方案 v0.2</h3><div class="meta">林知 · 11/3 15:40 确认回传</div></div>
+    <div class="card"><h3>实施可行分析 v0.2</h3><div class="meta">宋瑾 · 11/3 16:05 确认回传</div></div>
+    <div class="twinsay" style="color:var(--muted);font-size:13px">要把正式方案安排成任务吗？</div>`});
+}
+
+
+/* 第二至六幕：画面仅由参数决定，跳步与重演不依赖先前操作。 */
+const P_MENG={who:'孟',name:'孟珂',role:'数据分析'};
+const P_XU={who:'许',name:'许朗',role:'研发'};
+const P_CHEN={who:'陈',name:'陈默',role:'项目经理'};
+const a2_standards=()=>[
+  `PPT 不超过 15 页 ${src('F2')}`,
+  `必含市中台衔接架构图 ${src('F1')}`,
+  `两项能力的场景和数据来源 ${src('F3')}`,
+  `试点到上线的分阶段计划 ${src('T2')}`,
+  `以“审批进度一屏可见”开场 ${src('F2')}`,
+  `11/18 内部评审，11/20 交客户 ${src('T2')}`
+];
+function a2_compose({phase='input'}={}){
+ const show=phase!=='input', match=phase==='match';
+ return pc({...P_ZHOU,nav:'项目任务',crumb:'项目任务 / <b>正式方案与可行分析</b>',canvas:`
+  <div class="doc-h"><h2>安排正式工作</h2><span class="state ${show?'twin':'me'}">${show?'交付标准建议':'待补齐约定'}</span></div>
+  <div class="record section-gap">让林知出正式方案，宋瑾出可行分析。</div>
+  ${show?`<div class="${phase==='standards'?'proc':'card'} section-gap"><h3 class="section-title">${phase==='standards'?'任务太空，建议补齐交付标准':'交付标准'}</h3><div class="${phase==='standards'?'reveal':''}">${a2_standards().map(t=>`<div class="info-line">${phase==='adopt'?'<span class="state ok">已采纳</span> ':''}${t}</div>`).join('')}</div></div>`:`<p class="subtle section-gap">明确交付内容、评判标准、接收人和期限后发布。</p><div class="actbar"><span class="note">先交给分身补齐任务约定</span>${go('交给分身')}</div>`}
+  ${phase==='adopt'?`<div class="record section-gap">12345 数据授权该找谁？</div><div class="actbar"><span class="note">已逐条采纳交付标准</span>${go('查找接收人')}</div>`:''}
+  ${match?`<div class="proc section-gap"><div class="lbl"><i class="spark"></i>按公开职责声明匹配</div><div class="reveal"><div><b>孟珂 · 数据分析</b></div><div>匹配依据：“数据来源授权与口径” ${src('DUTY')}</div><div class="subtle">仅使用公开职责声明</div></div></div>`:''}`});
+}
+function a2_tasks({done=false}={}){
+ const tasks=[['林知','正式方案',a2_standards().join('<br>')],['宋瑾','实施可行分析',`两项能力的场景和数据来源 ${src('F3')}<br>11/18 内部评审，11/20 交客户 ${src('T2')}`],['孟珂','12345 数据授权',done?`11/14 前提交申请并给出口径说明，授权结果单独跟踪 ${src('AG2')}`:`11/14 前拿到 12345 授权 ${src('AG2')}`]];
+ return pc({...P_ZHOU,nav:'项目任务',crumb:'项目任务 / <b>发改委 · 智慧发改 APP</b>',canvas:`
+  <div class="doc-h"><h2>${done?'三项任务约定':'核对任务卡片'}</h2><span class="state ${done?'ok':'me'}">${done?'约定成立':'待本人发布'}</span></div>
+  <div class="doc-sub">${done?'林知、宋瑾已接受；孟珂经协商后接受修改版':'接收人、交付内容、评判标准和期限一并发布'}</div>
+  <div class="cols">${tasks.map(([n,t,b],i)=>`<section class="card"><div class="pk">接收人 · ${n}</div><h3>${t}</h3><div class="task-copy">${b}</div>${done?`<div class="section-gap"><span class="state ok">${i===2?'已接受修改版 v2':'已接受'}</span></div>`:''}</section>`).join('')}</div>
+  ${done?`<div class="record section-gap"><b>主事项跟踪项 · 12345 授权结果</b><p>授权结果单独跟踪 ${src('AG2')}</p></div>`:`<div class="actbar"><span class="note">由周宁确认接收人与任务约定</span>${go('确认发布')}</div>`}`});
+}
+function a2_accept(){
+ return phone({who:'林',title:'任务约定',tab:'协同',body:`<div class="card"><div class="meta">周宁发来 · 11/4</div><h3>智慧发改 APP · 正式方案</h3><span class="state me">待本人承接</span></div><div class="compact-lines">${a2_standards().map(t=>`<div class="pitem">${t}</div>`).join('')}</div><p class="subtle">收到任务不等于已接受。</p><div class="row muted-options"><span>不接受</span><span>协商</span></div><div style="margin-top:auto">${go('接受','full')}</div>`});
+}
+function a2_compare({mobile=false,armed=false}={}){
+ const body=`<div class="doc-h"><h2>12345 数据授权</h2><span class="state me">协商约定</span></div>
+  <div class="${armed?'card':'proc'} section-gap"><div class="lbl"><i class="spark"></i>授权需要委内审批，时间不由我方控制</div>
+  <div class="${armed?'':'reveal'}"><div class="info-line"><div class="pk">约定 v1</div><div class="old">11/14 前拿到 12345 授权</div></div><div class="info-line"><div class="pk">${mobile?'拟更新为约定 v2':'建议约定 v2'}</div><div class="new">11/14 前提交申请并给出口径说明，授权结果单独跟踪</div>${src('AG2')}</div></div></div>
+  <p class="subtle section-gap">${mobile?'孟珂发起协商。确认后更新为 v2，授权结果挂在主事项下跟踪。':'协商请求发给周宁的分身，需周宁本人再次确认。'}</p>`;
+ if(mobile)return phone({title:'确认修改后的约定',body:`${body}<div style="margin-top:auto">${go('确认','full')}</div>`});
+ return pc({...P_MENG,nav:'项目任务',crumb:'项目任务 / <b>12345 数据授权</b>',canvas:body+(armed?`<div class="actbar"><span class="note">由孟珂本人发起协商</span>${go('协商')}</div>`:'')});
+}
+function a3_memory({updated=false}={}){
+ return pc({...P_ZHOU,nav:'分身培养',crumb:'知识与记忆 / <b>发改委事项</b>',canvas:`
+  <div class="doc-h"><h2>知识与记忆</h2><span class="state twin">自动归类 · 去重 · 摘要</span></div>
+  <div class="doc-sub">近 30 天自动归入发改委事项的 23 条资料 · 无需手工分类</div>
+  <div class="counts">${[['会议纪要',6],['微信',11],['文件',4],['调研',2]].map(([t,n])=>`<div><strong>${n}</strong>${t}</div>`).join('')}</div>
+  <div class="reveal"><section class="card"><h3>信息中心对接会纪要 ${src('F1')}</h3><div class="meta">2026-06-12 · 原始记录保持原样</div>
+   <div class="info-line"><b>数据通道</b>　必须经市数据中台接口，不允许直连业务库 <span class="state ok">仍有效</span></div>
+   <div class="info-line"><b>部署位置</b>　正式部署在市政务云 ${updated?`<span class="state wait">版本更新</span><div class="new">被 11/6 新说法取代（试点阶段）${src('W6')}<br>试点可先部署在委内机房；正式上线走政务云。</div>`:''}</div></section>
+   ${updated?`<div class="proc section-gap"><div class="lbl"><i class="spark"></i>变更通知</div><p>已发布的林知方案任务引用了部署要求。</p><p>已向林知的分身发送变更通知；由林知自行决定是否修改方案。</p></div>`:`<div class="info-line">分管副主任汇报会纪要 ${src('F2')}<span class="subtle">　2026-08-20</span></div><div class="info-line">发改 AI 可用数据项调研 ${src('F3')}<span class="subtle">　2026-09</span></div>`}</div>`});
+}
+function a3_phone({phase='forward'}={}){
+ const conflict=phase!=='forward';
+ return phone({title:conflict?'核对记忆更新':'转发新情况',body:`<div class="card"><div class="meta">王主任 · 11/6 微信 ${src('W6')}</div><p>试点阶段可以先部署在我们委内机房，正式上线再上政务云。</p></div>
+  ${conflict?`<div class="proc"><div class="lbl"><i class="spark"></i>发现与 6/12 纪要的部署要求冲突</div><div class="${phase==='conflict'?'reveal':''}"><div class="info-line"><b>变了：部署位置</b><p>试点阶段有新说法 ${src('W6')}</p></div><div class="info-line"><b>没变：数据经市中台</b><p>未改变，6/12 纪要的要求仍然有效 ${src('F1')}</p></div></div></div>`:''}
+  ${phase==='confirm'?`<div class="card"><h3>确认更新内容</h3><p>试点可先部署在委内机房；正式上线走政务云；数据仍经市中台。</p><div class="meta">只更新记忆版本，原纪要原文不变。</div></div>`:''}
+  ${phase==='conflict'?'':`<div style="margin-top:auto">${go(phase==='forward'?'转给分身':'确认更新','full')}</div>`}`});
+}
+const a4_materials=['项目背景','产品定义','故事线','模拟数据','功能清单'];
+function a4_standard(){
+ return admin({nav:'关键节点标准',canvas:`<div class="doc-h"><h2>首版 Demo 研发启动</h2><span class="state ok">v1.2 · 生效</span></div><div class="doc-sub">维护人：交付中心 ${src('STD')}</div>
+ <table class="tbl matrix"><thead><tr><th>五类材料</th>${['完整','可用','一致','具备开工条件'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${a4_materials.map(t=>`<tr><td>${t}</td>${Array(4).fill('<td>必检</td>').join('')}</tr>`).join('')}</tbody></table>
+ <div class="record section-gap"><b>v1.2 变更原因</b><p>Q3 南山区项目因故事线与功能清单不一致返工两次，新增“逐条对应”检查。</p></div>
+ <details class="change-record section-gap" open><summary class="link-button">查看变更记录</summary><div class="info-line">v1.2 · 新增“逐条对应”检查 ${src('STD')}</div><p class="subtle">标准由组织中有权的人维护、发布。</p></details>`});
+}
+function a4_delivery({phase='submit'}={}){
+ const issues=phase==='issues',passed=phase==='publish';
+ return pc({...P_SONG,crumb:'工作台 / <b>首版 Demo · 研发交付包</b>',canvas:`<div class="doc-h"><h2>研发交付包</h2><span class="state ${passed?'ok':issues?'twin':'me'}">${passed?'重新核验通过':issues?'核验发现两处不一致':'待核验'}</span></div><div class="doc-sub">按首版 Demo 研发启动 v1.2 核验 ${src('STD')}</div>
+ <div class="material-list">${a4_materials.map(t=>`<span>${t}</span>`).join('')}</div>
+ ${issues?`<div class="stack section-gap reveal"><div class="issue"><h3>不一致 · 故事线与功能清单</h3><p>故事线第 3 步仍是“诉求研判”，但已对齐为二期，功能清单里没有。${src('PACK4')}${src('R1')}</p><p class="fix"><b>修改建议：</b>故事线第 3 步的“诉求研判”调整为二期候选，与功能清单对齐。</p></div><div class="issue warning"><h3>缺口 · 节点时间戳</h3><p>审批进度助手需要的“节点时间戳”字段，模拟数据里没有。${src('PACK4')}${src('F3')}</p><p class="fix"><b>修改建议：</b>模拟数据补齐“节点时间戳”字段，按 2024 年以后的完整口径核对。</p></div></div>`:''}
+ ${passed?`<div class="record section-gap"><span class="done-mark">已采纳修改</span><div class="info-line">故事线与功能清单已逐条对应，诉求研判列为二期候选。${src('R1')}</div><div class="info-line">模拟数据已补齐节点时间戳字段。${src('F3')}</div></div><table class="tbl matrix section-gap"><thead><tr><th>检查</th><th>完整</th><th>可用</th><th>一致</th><th>具备开工条件</th></tr></thead><tbody><tr><td>五类材料</td>${Array(4).fill('<td><span class="state ok">通过</span></td>').join('')}</tr></tbody></table>`:''}
+ ${!issues?`<div class="actbar"><span class="note">${passed?'AI 核验通过 ≠ 业务批准，发布由宋瑾决定。':'五类材料已提交，由分身核验。'}</span>${go(passed?'发布给许朗':'核验')}</div>`:''}`});
+}
+function a4_plan({armed=false}={}){
+ return pc({...P_XU,nav:'项目任务',crumb:'项目任务 / <b>首版 Demo 研发</b>',canvas:`<div class="doc-h"><h2>首版 Demo 研发 · 任务规划</h2><span class="state ${armed?'me':'twin'}">${armed?'待本人承接':'按本人技术储备分层'}</span></div><div class="doc-sub">依据许朗本人的工作积累，仅本人分身使用 ${src('XU4')}</div>
+ <div class="cols ${armed?'':'reveal'}"><div class="card"><h3>可直接做</h3><p><b>政策问答</b></p><p class="subtle section-gap">许朗做过政数局知识库问答。</p></div><div class="card"><h3>需验证</h3><p><b>市中台接口调用</b></p><p class="subtle section-gap">未接过，测试账号预计 3 周才能拿到 ${est('估计')}</p></div><div class="card"><h3>需协作</h3><p><b>审批时间戳口径</b></p><p class="subtle section-gap">需要找孟珂。</p></div></div>
+ <div class="issue section-gap"><h3>进度风险</h3><p>演示日 12/12 可能赶不上。</p></div>
+ ${armed?`<div class="record section-gap"><div class="pk">承接说明</div>测试账号问题需要讨论。</div><div class="actbar"><span class="note">由许朗本人决定承接</span>${go('接受')}</div>`:''}`});
+}
+function a5_share(){return phone({title:'确认分享范围',body:`<div class="card"><h3>首版 Demo 的 AI 范围与市中台衔接</h3><div class="meta">宋瑾发起 · 11/26</div></div><div class="pk">会分享 · 王主任口头意见摘要</div><div class="card">可以，王主任更在意 20 号能看到东西。${src('R1')}</div><p class="subtle">仅分享本次本人确认的摘要。</p><div style="margin-top:auto">${go('确认分享','full')}</div>`});}
+const a5_actions=({check=false}={})=>`<div class="stack"><div class="${check?'issue warning':'record'}"><b>许朗 · 接沙箱接口</b>${check?'<div class="pk">缺评判标准 → 建议补全</div>':''}<p>政策问答 P95 响应 &lt; 3 秒、答案 100% 附出处</p></div><div class="${check?'issue warning':'record'}"><b>孟珂 · 沙箱开通</b>${check?'<div class="pk">缺期限 → 建议补全</div>':''}<p>12/3</p></div><div class="record"><b>林知 · 更新架构图</b><p><span class="state ok">完整</span></p></div></div>`;
+function a5_group({phase='prep'}={}){
+ const rank={prep:0,proposal:1,conflict:2,draft:3,actions:4,final:5,done:6}[phase];
+ let panel='';
+ if(rank<=1)panel=`<h3 class="section-title">准备单</h3><div class="${rank===0?'reveal':''}"><div class="info-line"><b>已确认事实</b><p>数据经市中台 ${src('F1')}；试点允许委内机房部署 ${src('W6')}；首版做能力①② ${src('R1')}</p></div><div class="info-line"><b>各方建议</b><p>许朗：先做独立演示。</p></div><div class="info-line"><b>待决定</b><p>演示用什么数据通道</p></div><div class="info-line"><b>未完成承诺</b><p>孟珂的 12345 授权申请：已提交，等待审批 ${src('PREP5')}</p></div></div>`;
+ else if(rank===2)panel=`<h3 class="section-title">提醒 · 请参与人判断</h3><div class="reveal"><div class="issue"><h3>与 6/12 纪要“不允许直连业务库”冲突</h3><p>6/12 信息中心对接会纪要 ${src('F1')}</p></div><div class="info-line">11/6 新说法只放宽了部署位置，没有放宽数据通道 ${src('W6')}</div></div>`;
+ else if(rank===3)panel=`<h3 class="section-title">议定草案</h3><div class="proc"><div class="lbl"><i class="spark"></i>书记员整理</div><div class="reveal"><div class="info-line">委内机房部署 ${src('W6')}</div><div class="info-line">市中台沙箱接口</div><div class="info-line">脱敏样例数据</div></div></div><p class="subtle section-gap">待相关本人确认。</p>`;
+ else panel=`<h3 class="section-title">${rank===6?'正式任务':'行动项'+(rank===4?'草案 · 缺项检查':'')}</h3><div class="${rank===4?'reveal':''}">${rank===4?a5_actions({check:true}).replace('<div class="stack">','').replace(/<\/div>$/,''):a5_actions()}</div>${rank>=5?`<p class="subtle section-gap">${src('MT5')}${rank===6?'已转为正式任务，沿用接受、不接受或协商的承接规则。':'相关本人已确认，待发起人最终确认。'}</p>`:''}`;
+ return pc({...P_SONG,nav:'决策',crumb:'共创 / <b>首版 Demo 的 AI 范围与市中台衔接</b>',canvas:`<div class="doc-sub">11/26 · 发起人宋瑾 · 参与人：宋瑾、林知、许朗、孟珂、周宁</div><div class="discussion"><div><h3 class="section-title">讨论</h3><div class="chat"><b>周宁 <span class="state ok">确认分享</span></b><p>王主任口头意见摘要：可以，王主任更在意 20 号能看到东西。${src('R1')}</p></div>${rank>=1?'<div class="chat"><b>许朗</b><p>先导出项目库数据做独立演示，两周就能出。</p></div>':''}${rank>=3?'<div class="chat"><b>孟珂</b><p>市中台有一个沙箱环境，用脱敏样例数据，一周能开通。</p></div><div class="chat"><b>林知</b><p>同意。</p></div>':''}<p class="subtle section-gap">仅使用参与人本次确认可分享的内容。</p></div><aside class="secretary"><div class="pk">书记员</div>${panel}</aside></div>${rank===5?`<div class="actbar"><span class="note">许朗、孟珂已确认 · 各方确认后由发起人拍板</span><span data-result="discussion">${go('最终确认')}</span></div>`:rank===6?'<div class="actbar"><span class="done-mark">已最终确认 · 三个行动项转为正式任务</span></div>':''}`});
+}
+function a5_confirm({person='xu'}={}){
+ const xu=person==='xu';
+ return phone({who:xu?'许':'孟',title:'议定与行动项',tab:'协同',body:`<div class="card"><h3>首版 Demo · 议定</h3><p>委内机房部署 + 市中台沙箱接口 + 脱敏样例数据</p></div><div class="card"><h3>${xu?'许朗 · 接沙箱接口':'孟珂 · 沙箱开通'}</h3><p>${xu?'政策问答 P95 响应 &lt; 3 秒、答案 100% 附出处':'期限：12/3'}</p><div class="meta">与本人有关的议定和行动项</div></div><div class="waiting">未回复 = 待确认<br>不算同意</div>${xu?`<div class="card"><span class="state me">待许朗本人确认</span></div><div style="margin-top:auto">${go('确认','full')}</div>`:'<div class="card"><span class="state ok">孟珂 · 已确认</span></div>'}`});
+}
+function a6_authorize(){return admin({nav:'岗位与授权',canvas:`<div class="doc-h"><h2>项目经理岗位变动单</h2><span class="state me">待韩立批准</span></div><div class="doc-sub">12/1 · 岗位变动与项目授权同步预览</div><div class="card"><h3>宋瑾：智慧发改项目经理 → 政数局 AIP 二期</h3><p>12/5 生效；接任：陈默</p></div><div class="record section-gap"><h3 class="section-title">权限调整预览</h3><div class="info-line">12/5 起收回宋瑾对本项目的访问</div><div class="info-line">陈默获得项目经理岗位授权</div>${src('JOB6')}</div><div class="actbar"><span class="note">由交付中心负责人批准</span>${go('批准')}</div>`});}
+const a6_items=()=>[
+ ['客户背景',`${src('F1')}${src('F2')}${src('F3')}${src('W6')}`],
+ ['架构出处',`11/26 议定 ${src('MT5')}`],
+ ['交付标准来源',`${src('STD')}${src('T2')}`],
+ ['联系人',`王主任、信息中心李工 ${src('HAND6')}`],
+ ['当前进度',`方案已验收，Demo 研发中 ${src('HAND6')}`],
+ ['未完成任务',`3 项，来自 11/26 共创 ${src('MT5')}`],
+ ['已确认客户承诺',`12/12 试点演示 ${src('HAND6')}`],
+ ['风险',`12345 授权未批、沙箱开通依赖 ${src('HAND6')}`]
+];
+function a6_handover({phase='prepare'}={}){
+ const receive=phase==='receive',twin=phase==='prepare';
+ return pc({...receive?P_CHEN:P_SONG,crumb:'项目交接 / <b>智慧发改 APP</b>',canvas:`<div class="doc-h"><h2>智慧发改 · 工作交接包</h2><span class="state ${twin?'twin':receive?'ok':'me'}">${twin?'分身整理':receive?'宋瑾已确认范围':'待确认交接范围'}</span></div><div class="doc-sub">宋瑾 → 陈默 · 12/1 · 原判断与承诺保留原署名</div><div class="handover"><div class="${twin?'reveal':''}">${a6_items().map(([t,b],i)=>`<div class="info-line"><b>${String(i+1).padStart(2,'0')}　${t}</b><div>${b}</div></div>`).join('')}</div>${receive?`<aside class="record"><b>接任人 · 陈默</b><p class="section-gap">使用自己的分身，按自己的项目经理岗位授权查询。</p><p class="subtle section-gap">岗位变动 12/5 生效 ${src('JOB6')}</p></aside>`:`<aside class="private"><h3 class="section-title">不纳入</h3><p>宋瑾的个人工作笔记</p><div class="info-line">个人工作笔记 1</div><div class="info-line">个人工作笔记 2</div><div class="info-line">个人工作笔记 3</div><p class="subtle section-gap">如需贡献请本人选择</p></aside>`}</div>${twin?'':`<div class="actbar"><span class="note">${receive?'接收知识与逐项承接任务分开处理。':'个人工作笔记不随交接包移交。'}</span>${go(receive?'确认接收':'确认交接范围')}</div>`}`});
+}
+function a6_answer(){return pc({...P_CHEN,crumb:'项目交接 / <b>查询历史依据</b>',canvas:`<div class="doc-h"><h2>为什么不直接接委内业务库？</h2><span class="state ok">交接包已接收</span></div><div class="doc-sub">陈默的分身 · 按陈默自己的岗位授权查询</div><div class="proc"><div class="lbl"><i class="spark"></i>陈默的分身</div><div class="reveal"><div class="info-line"><b>原始要求</b><p>AI 调用委内数据必须经市数据中台接口，不允许直连业务库。${src('F1')}</p></div><div class="info-line"><b>11/6 只改变部署位置</b><p>试点可先部署在委内机房，正式上线走政务云；数据仍经市中台。${src('W6')}${src('F1')}</p></div><div class="info-line"><b>11/26 形成议定</b><p>首版采用“委内机房部署 + 市中台沙箱接口 + 脱敏样例数据”。${src('MT5')}</p></div></div></div><div class="record section-gap">历史判断、客户承诺保留原署名，接任人可回溯核对。</div>`});}
+function a6_takeover({done=false}={}){return pc({...P_CHEN,nav:'项目任务',crumb:'项目交接 / <b>逐项承接待办</b>',canvas:`<div class="doc-h"><h2>知识已接收，待办逐项承接</h2><span class="state ${done?'ok':'me'}">${done?'已提交承接意见':'陈默本人选择'}</span></div><div class="doc-sub">来自宋瑾交接包 ${src('HAND6')}</div><table class="tbl"><thead><tr><th>待办</th><th>本人的选择</th><th>说明</th></tr></thead><tbody><tr><td>交接待办 1</td><td><span class="state ok">接受</span></td><td>由陈默承接</td></tr><tr><td>交接待办 2</td><td><span class="state ok">接受</span></td><td>由陈默承接</td></tr><tr><td>12/12 演示</td><td><span class="state ${done?'ok':'me'}">${done?'已发起协商':'协商'}</span></td><td>需要先与王主任确认时间</td></tr></tbody></table><div class="record section-gap">知识继承和任务承接分开处理；原有承诺保留原署名。</div>${done?'<div class="actbar"><span class="done-mark">已接受 2 项；演示日期已选择协商</span></div>':`<div class="actbar"><span class="note">先确认客户时间，再对演示日期作出承诺。</span><span data-result="takeover">${go('协商')}</span></div>`}`});}
+/* 收束 A：放射式组织任务图谱。两步布局一致，第 2 步只高亮节点并打开侧栏。 */
+const RG_COLOR={ok:'#8FB3E8',run:'#5E8BFF',block:'#FF6F86',wait:'#B9A5DE',core:'#7FD3C4'};
+function z1_tree({detail=false}={}){
+ const core=[150,230], app=[480,230];
+ const projects=[
+  {p:[305,230],t:'发改委项目',s:'客户经营：周宁',k:'run',big:true},
+  {p:[95,85],t:'政数局 · AIP 二期',s:'新增：宋瑾',k:'run'},
+  {p:[60,370],t:'财政局项目',s:'进行中',k:'run'},
+  {p:[235,400],t:'南山区项目',s:'已验收',k:'ok'}];
+ const tasks=[
+  {p:[600,70],t:'建设方案 · 林知',s:'已验收 11/20',k:'ok'},
+  {p:[655,150],t:'实施可行分析 · 宋瑾',s:'已验收 11/20',k:'ok'},
+  {p:[675,230],t:'12345 数据授权 · 孟珂',s:'受阻：等待委内审批',k:'block'},
+  {p:[655,310],t:'首版 Demo 研发 · 许朗',s:'进行中 · 2 项子任务',k:'run',drill:true},
+  {p:[600,390],t:'市中台沙箱开通 · 孟珂',s:'12/3 到期',k:'wait'}];
+ const curve=([x1,y1],[x2,y2],cls)=>`<path class="${cls}" d="M${x1} ${y1} Q${(x1+x2)/2} ${y1} ${x2} ${y2}"/>`;
+ const dot=(n,r,inner='')=>{
+  const c=RG_COLOR[n.k], sel=detail&&n.drill;
+  const attrs=n.drill?`data-drill="demo" tabindex="0" role="button" aria-label="查看首版 Demo 研发"`:'';
+  return `<g class="rg-node${n.k==='block'?' rg-block':''}${sel?' rg-sel':''}" ${attrs}>
+   ${n.k==='block'?`<circle class="rg-pulse" cx="${n.p[0]}" cy="${n.p[1]}" r="${r+4}" stroke="${c}"/>`:''}
+   ${sel?`<circle cx="${n.p[0]}" cy="${n.p[1]}" r="${r+7}" fill="none" stroke="#fff" stroke-width="2"/>`:''}
+   <circle cx="${n.p[0]}" cy="${n.p[1]}" r="${r+3}" fill="${c}" opacity=".18"/>
+   <circle cx="${n.p[0]}" cy="${n.p[1]}" r="${r}" fill="#0E1A2E" stroke="${c}" stroke-width="2"/>
+   <circle cx="${n.p[0]}" cy="${n.p[1]}" r="${Math.max(3,r-5)}" fill="${c}"/>
+   ${n.drill?`<rect x="${n.p[0]-r-6}" y="${n.p[1]-r-6}" width="${(r+6)*2+190}" height="${(r+6)*2}" fill="transparent"/>`:''}
+   ${inner}
+  </g>`;};
+ const label=(n,dx,anchor='start',big=false)=>`<text class="rg-t${big?' big':''}" x="${n.p[0]+dx}" y="${n.p[1]-3}" text-anchor="${anchor}">${n.t}</text><text class="rg-s" x="${n.p[0]+dx}" y="${n.p[1]+15}" text-anchor="${anchor}" fill="${RG_COLOR[n.k]}">${n.s}</text>`;
+ const stars=[[40,30],[260,40],[520,20],[760,60],[790,200],[30,220],[400,420],[720,430],[300,330],[560,200]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i%3?1:1.6}" fill="#5D7396"/>`).join('');
+ const svg=`<svg viewBox="${detail?'255 35 590 400':'0 0 860 450'}" role="img" aria-label="组织—项目—任务的组织任务图谱">
+  <defs><radialGradient id="rgCore"><stop offset="0" stop-color="#7FD3C4" stop-opacity=".55"/><stop offset="1" stop-color="#7FD3C4" stop-opacity="0"/></radialGradient></defs>
+  ${stars}
+  ${projects.map(n=>curve(core,n.p,'rg-e rg-dash')).join('')}
+  ${curve(projects[0].p,app,'rg-e')}
+  ${tasks.map(n=>curve(app,n.p,'rg-e'+(n.k==='block'?' rg-e-block':''))).join('')}
+  <circle cx="${core[0]}" cy="${core[1]}" r="70" fill="url(#rgCore)"/>
+  <circle cx="${core[0]}" cy="${core[1]}" r="32" fill="#10273A" stroke="#7FD3C4" stroke-width="1.5"/>
+  <circle cx="${core[0]}" cy="${core[1]}" r="22" fill="none" stroke="#7FD3C4" stroke-opacity=".5" stroke-dasharray="2 4"/>
+  <text class="rg-t big" x="${core[0]}" y="${core[1]+58}" text-anchor="middle">组织关键任务</text>
+  <text class="rg-s" x="${core[0]}" y="${core[1]+76}" text-anchor="middle" fill="#9FB3D1">2026 Q4 · 4 个项目</text>
+  ${projects.map((n,i)=>dot(n,n.big?12:8)+(i===0?label(n,0,'middle',true).replace(/y="(\d+)"/g,(m,y)=>`y="${+y-30}"`):label(n,16))).join('')}
+  ${dot({p:app,k:'run'},14)}
+  <text class="rg-t big" x="${app[0]}" y="${app[1]-30}" text-anchor="middle">智慧发改 APP 升级加 AI</text>
+  <text class="rg-s" x="${app[0]}" y="${app[1]+36}" text-anchor="middle" fill="#9FB3D1">项目经理：宋瑾 → 陈默</text>
+  ${tasks.map(n=>dot(n,9,label(n,18))).join('')}
+ </svg>`;
+ const key=`<div class="graph-key"><span><i style="background:${RG_COLOR.ok}"></i>已验收</span><span><i style="background:${RG_COLOR.run}"></i>进行中</span><span><i style="background:${RG_COLOR.block}"></i>受阻</span><span><i style="background:${RG_COLOR.wait}"></i>待开始 / 到期</span><span class="rg-hint">${detail?'':'点击“首版 Demo 研发”查看详情'}</span></div>`;
+ const side=detail?`<aside class="task-detail"><h3 class="section-title">首版 Demo 研发</h3>
+   <div class="info-line"><b>责任人</b><p>许朗 · 已接受</p></div>
+   <div class="info-line"><b>约定</b><p>委内机房部署 + 市中台沙箱接口 + 脱敏样例数据</p></div>
+   <div class="info-line"><b>评判标准</b><p>政策问答 P95 响应 &lt; 3 秒，答案 100% 附出处</p></div>
+   <div class="info-line"><b>子任务</b><p>政策问答 · 进行中<br>审批进度助手 · 待开始，依赖时间戳口径</p></div>
+   <div class="info-line"><b>依据</b>${src('MT5')}${src('F1')}</div>
+   <p class="subtle section-gap">只显示已共享的约定与交付。</p></aside>`:'';
+ return admin({canvas:`<div class="doc-h"><h2>组织关键任务</h2><span class="state ok">2026 Q4</span></div><div class="doc-sub">任务、状态与已共享交付 · 12/1</div><div class="graph-layout ${detail?'detail':''}"><div class="graph">${svg}${key}</div>${side}</div>`});
+}
+function z2_capabilities({phase='list'}={}){
+ const candidate=phase==='candidate',old=phase==='replacement';
+ const rows=[
+ [`首版 Demo 研发启动标准 v1.2`,`关键节点标准<br>交付中心维护 ${src('STD')}`,`<span class="state ok">生效</span><br>v1.2`,`宋瑾分身核验；本季另 4 个项目的产品经理分身`],
+ [`政务 AI“数据经市中台”架构方法`,`方案方法<br>林知署名；方案负责人背书 ${src('ORG')}`,`<span class="state ok">生效</span>`,`陈默分身回答追问；政数局项目方案分身`],
+ [`发改委可用数据清单与口径`,`数据口径<br>孟珂署名 ${src('F3')}`,`<span class="state ok">生效</span>`,`许朗分身做难度分层`],
+ [`<button class="link-button" data-capability="candidate">市中台沙箱接入经验</button>`,`研发经验<br>许朗个人工作区，本人选择贡献`,`<span class="state wait">候选</span><br>待研发负责人背书`,`—`],
+ [`<button class="link-button" data-capability="replacement">发改委 AI 部署位置：一律上市政务云</button>`,`客户要求<br>6/12 纪要 ${src('F1')}`,`<span class="state wait">部分失效</span>`,`试点阶段被 11/6 新说法取代；正式上线仍有效。当前查询返回新版本，旧版可追溯。`]
+ ];
+ return admin({nav:'组织能力',canvas:`<div class="doc-h"><h2>组织能力</h2><span class="state ok">按岗位授权调用</span></div><div class="doc-sub">保留署名、背书与版本；调用记录可追溯 ${src('ORG')}</div><table class="tbl capability ${old?'compact':''}"><thead><tr><th>组织能力</th><th>类型 · 来自 / 署名与背书</th><th>状态 · 版本</th><th>被哪些分身调用</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${(candidate&&i===3)||(old&&i===4)?'selected-row':''}">${r.map((t,j)=>`<td>${old&&i===4&&j===3?'当前查询返回新版本，旧版可追溯。':t}</td>`).join('')}</tr>`).join('')}</tbody></table>
+ ${candidate?`<div class="record section-gap"><b>市中台沙箱接入经验 · 候选 → 背书 → 署名</b><div class="path"><span>许朗个人工作区</span>→<span>本人贡献</span>→<span class="current">待研发负责人背书</span>→<span>署名发布</span></div><p class="subtle">当前为候选，背书后署名发布。${src('ORG')}</p></div>`:''}
+ ${old?`<div class="record section-gap"><b>部分失效 · 替代关系</b><div class="replacement"><div><div class="pk">6/12 纪要 · 旧版</div><span class="old">一律上市政务云</span> ${src('F1')}</div><div><div class="pk">11/6 新说法 · 当前版本</div>试点可先部署在委内机房 ${src('W6')}</div><div><div class="pk">仍然有效</div>正式上线走政务云；数据仍经市中台 ${src('F1')}</div></div><p class="subtle">原始纪要不改写，旧版可追溯。</p></div><div class="closing">让信息流动，让记忆沉淀，让边界清晰。</div>`:''}`});
+}
+
+/* =====================================================================
+   四、序幕画面
+   ===================================================================== */
+function overview(){
+  const ph = `<div class="m-phone"><div class="bar m" style="width:70%;align-self:flex-end"></div><div class="bar t"></div><div class="bar t" style="width:60%"></div></div>`;
+  const pcm = `<div class="m-pc"><div class="s"></div><div class="d"><div class="bar" style="width:55%;height:8px;background:#B9C1CC"></div><div class="bar"></div><div class="bar t" style="width:80%"></div><div class="bar"></div><div class="bar m" style="width:30%;margin-top:6px"></div></div></div>`;
+  const gr = `<div class="m-pc"><div class="s"></div><div class="m-gr" style="position:relative">${[[50,50,7],[22,28,4],[78,26,4],[20,74,4],[80,72,4],[50,14,3]].map(([x,y,r])=>`<i style="position:absolute;left:${x}%;top:${y}%;width:${r*2}px;height:${r*2}px;margin:-${r}px;border-radius:50%;background:#7FD3C4;opacity:.85"></i>`).join('')}</div></div>`;
+  const col = (mini,t,p,li)=>`<div class="ov-col"><div class="mini">${mini}</div><h3>${t}</h3><p>${p}</p><ul>${li.map(([b,s])=>`<li><b>${b}</b><span>${s}</span></li>`).join('')}</ul></div>`;
+  return `<div class="ov"><div class="ov-cols">
+    ${col(ph,'手机 · 随身与现场','客户现场、出差途中、临时沟通',[['现场表达','说清新情况，带上语音、照片和材料'],['随身查询','查历史依据、有效约定与承诺'],['及时回应','回答问询、承接任务、作出确认']])}
+    ${col(pcm,'PC · 深度工作与生产','集中处理、专业制作、持续协作',[['专业生产','起草、分析、编辑与修订成果'],['组织协作','共创与协商，交付并验收'],['整理与交接','核对历史依据，接续当前工作']])}
+    ${col(gr,'管理端 · 组织配置与治理','面向组织，不看任何人的个人区',[['关键节点标准','少数交接点的统一要求'],['岗位与授权','权限跟岗位走，离岗即收回'],['任务与能力','组织任务树，组织沉淀的能力']])}
+    </div>
+    <div class="ov-twin"><h3>本人的同一个分身</h3><p>补齐上下文，准备并推进获授权的工作；需要本人判断时，交还给本人。</p></div>
+    <div class="ov-legend"><span><i style="background:var(--twin)"></i>分身：查、整理、起草、问询、核验</span><span><i style="background:var(--me)"></i>本人：发送、接受、协商、确认、拍板</span></div></div>`;
+}
+
+/* =====================================================================
+   五、幕表。k: twin 分身动作 / me 本人决定 / scene 画面说明
+   view: 每项 {cap, r}；r 返回画面 HTML。me 步骤的画面里需有 data-go 按钮。
+   ===================================================================== */
+const ACTS = [
+{tab:'序', name:'三端总览', title:'一个分身，三个端', judge:'同一个分身、同一件事，手机、PC、管理端各管一段；分身做准备，人做决定。',
+ points:['不是聊天助手，也不是知识库：每个人有一个记得工作的分身。','三个端按工作情境分工，接续同一件事。','全场只看两种颜色：青色是分身在做，琥珀色是人在做决定。'],
+ qa:[['分身和数字员工有什么区别？','数字员工替人干活；分身代表本人参与协作，承诺和决定仍由本人作出。']],
+ setting:['人物、客户、日期和数据均为演示设定。'],
+ steps:[{k:'scene', who:'', text:'三端分工与同一个分身', say:'我们做的不是聊天助手，也不是知识库。每个人有一个工作分身，它记得你的工作，替你准备、帮你协商，但决定永远是你做。接下来看一个项目，从客户打来一个电话开始。', view:[{r:overview}]}]},
+
+{tab:'一', name:'沟通', title:'一句话，背景和初稿都到了', judge:'销售只说新情况；方案和产品打开电脑时已有带背景的专业初稿；初稿经本人确认才回传。',
+ points:['周宁只说了一句话，背景是分身补的，每条都能点开出处。','个人笔记没有发出去：同一个分身里，个人区和工作区分开。','分身不知道的事不硬答，转问本人。','初稿再好，也要本人确认才回传。'],
+ qa:[['分身凭什么知道 6 月的纪要？','平时的纪要和聊天都在被自动整理，第三幕展开。'],['金额为什么标“估计”？','客户没有确认过的数字，不能当事实传下去。']],
+ setting:['11/3 周一 10:20，周宁在去财政局的车上接到王主任电话。','林知过往的政务方案、宋瑾的分析方法均为设定。'],
+ steps:[
+  {k:'me', who:'周宁', text:'用语音说出新情况', say:'周宁在车上，只说这次新发生的事：客户要什么、什么时候要、找谁。', view:[{cap:'<b>周宁</b>手机', r:a1_voice}]},
+  {k:'twin', who:'周宁的分身', text:'归入事项，召回三条背景，找到协作对象', say:'分身把这句话归到发改委的事项里，从周宁过去的纪要和调研中召回三条背景。每一条都带着出处，可以点开看原文。', view:[{cap:'<b>周宁</b>手机', r:a1_recall}]},
+  {k:'me', who:'周宁', text:'核对共享范围，发给林知、宋瑾', say:'发之前，周宁看到什么会发出去、什么不会。那条关于王主任的个人笔记，默认留在周宁自己的区域里。', view:[{cap:'<b>周宁</b>手机', r:a1_package}]},
+  {k:'twin', who:'林知的分身', text:'结合背景与林知的积累起草建设方案', say:'林知打开电脑，初稿已经在了。它结合了周宁共享的背景和林知自己做过的政务方案，每段都标明是事实、判断还是待核实。', view:[{cap:'<b>林知</b>PC 工作台', r:()=>linDoc({drafting:true})}]},
+  {k:'twin', who:'宋瑾的分身', text:'逐项给出可行结论，向周宁的分身问询', say:'宋瑾那边，可行分析逐项给结论。第三项要不要做，取决于客户能不能接受分期，于是去问周宁的分身。周宁的分身没有记录，不猜，转给周宁本人。', view:[{cap:'<b>宋瑾</b>PC 工作台', r:()=>songDoc({ask:true})}]},
+  {k:'me', who:'周宁', text:'在手机上回答问询', say:'周宁在手机上收到一个问题，回一句话就行。', view:[{cap:'<b>周宁</b>手机', r:a1_question}]},
+  {k:'twin', who:'宋瑾的分身', text:'把答复同步到林知的方案，提出修改建议', say:'答复回到宋瑾，同时同步给林知的方案，给出修改建议。两个岗位的口径对齐了，不用再开会。', view:[{cap:'<b>林知</b>PC 工作台', r:()=>linDoc({suggest:true})}]},
+  {k:'me', who:'林知', text:'采纳修改，确认回传', say:'回传前，林知自己确认。分身起草的版本和本人确认的版本分开记录。', view:[{cap:'<b>林知</b>PC 工作台', r:()=>linDoc({adopted:true, armed:true})}]},
+  {k:'me', who:'宋瑾', text:'确认回传', say:'宋瑾也一样，本人确认才回传。', view:[{cap:'<b>宋瑾</b>PC 工作台', r:()=>songDoc({armed:true})}]},
+  {k:'scene', who:'周宁', text:'收到两份已确认的初稿', say:'从一个电话到两份确认过的初稿，周宁总共说了两句话。接下来，周宁要把正式方案安排成任务。', view:[{cap:'<b>周宁</b>手机', r:a1_received}]},
+ ]},
+
+{tab:'二', name:'任务', title:'讲清楚好坏，找对人，接收人自己选', judge:'空泛任务发不出去，分身补齐交付标准；按公开职责找人；接受是本人的选择，协商要二次确认。',
+ points:['“出一版方案”发不出去，分身把好坏标准补上，每条标准来自历史记录。','找人看公开的职责声明，不翻别人的私人记忆。','收到任务不等于接了任务；协商结果双方都要再点一次头。'],
+ qa:[['如果匹配不到合适的人？','给出候选和依据，由发起人决定。'],['协商谈不拢怎么办？','重大分歧由真人线下解决，产品不做线上裁决。']],
+ setting:['11/4，周宁在 PC 上发布任务。'],
+ steps:[
+  {k:'me', who:'周宁', text:'输入：让林知出正式方案，宋瑾出可行分析', say:'周宁先把工作说出来。分身还要把交付标准补齐，接收人才能知道怎样才算做好。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_compose()}]},
+  {k:'twin', who:'周宁的分身', text:'指出任务太空，补齐交付标准并标依据', say:'这里把模糊要求拆成可以核对的标准。每条都有依据，周宁可以回到原文再判断。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_compose({phase:'standards'})}]},
+  {k:'me', who:'周宁', text:'采纳标准，问“12345 授权找谁”', say:'标准由周宁逐条采纳。还有一个不知道找谁的问题，交给分身按职责去找。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_compose({phase:'adopt'})}]},
+  {k:'twin', who:'周宁的分身', text:'按公开职责声明匹配到孟珂', say:'找人的依据是公开职责声明。这足够说明为什么匹配到孟珂，也保留了发起人的选择权。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_compose({phase:'match'})}]},
+  {k:'me', who:'周宁', text:'核对三张任务卡，确认发布', say:'发布前，周宁核对三个人各自要交什么、什么时候交。任务约定由周宁确认后发出。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_tasks()}]},
+  {k:'me', who:'林知', text:'在手机上接受任务', say:'林知收到的是一份有标准的约定。只有本人接受，任务才算承接。', view:[{cap:'<b>林知</b>手机', r:()=>a2_accept()}]},
+  {k:'twin', who:'孟珂的分身', text:'提示授权时间不可控，拟出协商条件', say:'孟珂能提交申请，却不能承诺审批结果。分身把这个边界指出来，准备一份可以兑现的约定。', view:[{cap:'<b>孟珂</b>PC', r:()=>a2_compare()}]},
+  {k:'me', who:'孟珂', text:'发起协商', say:'旧条款和新条款放在一起，改了什么一眼就能看清。协商请求由孟珂本人发出。', view:[{cap:'<b>孟珂</b>PC', r:()=>a2_compare({armed:true})}]},
+  {k:'me', who:'周宁', text:'确认修改后的约定', say:'改约定还要周宁再点一次头。双方确认后，新版本才成立。', view:[{cap:'<b>周宁</b>手机', r:()=>a2_compare({mobile:true,armed:true})}]},
+  {k:'scene', who:'', text:'三项约定成立，授权结果单独跟踪', say:'三项工作都有了明确承接。授权结果继续挂在主事项下跟踪，不会随着协商结束就消失。', view:[{cap:'<b>周宁</b>PC', r:()=>a2_tasks({done:true})}]},
+ ]},
+
+{tab:'三', name:'治理', title:'平时不用整理，用时找对、找全、用对', judge:'资料平时自动整理；新旧说法冲突时不静默覆盖，由本人确认；原始记录保持原样。',
+ points:['前两幕能召回三条历史背景，是因为平时一直在自动整理。','新说法只替换真正改变的那一半。','原纪要不改写，变的是记忆版本。'],
+ qa:[['私人聊天会被整理给别人看吗？','整理不改变谁能看到；分享要本人另外选择。']],
+ setting:['11/6 晚，王主任发来微信。'],
+ steps:[
+  {k:'twin', who:'周宁的分身', text:'近 30 天自动归入 23 条资料，可回原文', say:'前面召回的背景，来自平时持续整理的资料。摘要可以帮助查找，判断时仍能点开原文核对。', view:[{cap:'<b>周宁</b>PC 知识与记忆', r:()=>a3_memory()}]},
+  {k:'me', who:'周宁', text:'转发王主任的新说法', say:'王主任又说了一个新情况。周宁把这句话转给分身，先检查它影响了哪条已有要求。', view:[{cap:'<b>周宁</b>手机', r:()=>a3_phone()}]},
+  {k:'twin', who:'周宁的分身', text:'发现冲突，拆开“变了的”和“没变的”', say:'这里要分清改变的范围。部署位置有新说法，数据通道的限制仍然有效。', view:[{cap:'<b>周宁</b>手机', r:()=>a3_phone({phase:'conflict'})}]},
+  {k:'me', who:'周宁', text:'确认更新', say:'分身把合并后的有效要求交给周宁核对。记忆版本由本人确认更新。', view:[{cap:'<b>周宁</b>手机', r:()=>a3_phone({phase:'confirm'})}]},
+  {k:'twin', who:'周宁的分身', text:'生成新版本记忆，通知林知的分身', say:'更新保留历史记录，也通知引用过它的任务。林知仍然自己决定怎样修改方案。', view:[{cap:'<b>周宁</b>PC', r:()=>a3_memory({updated:true})}]},
+ ]},
+
+{tab:'四', name:'预制标准', title:'关键节点达标再开工', judge:'只有关键节点使用组织统一标准；核验能发现材料之间对不上；研发分身按本人能力分层。',
+ points:['标准只放在少数关键节点。','核验抓“对不上”，这是 Q3 返工的原因。','统一要求归组织，个人习惯归各自的分身。'],
+ qa:[['AI 核验通过就算批准了吗？','不算，发布由宋瑾决定，验收由有权的人决定。']],
+ setting:['11/24 启动首版 Demo 研发，演示日定在 12/12。'],
+ steps:[
+  {k:'scene', who:'韩立', text:'关键节点标准 v1.2 及变更原因', say:'组织把返工教训变成关键节点标准。材料要齐，也要互相对得上。', view:[{cap:'<b>韩立</b>管理端', r:()=>a4_standard()}]},
+  {k:'me', who:'宋瑾', text:'提交研发交付包核验', say:'宋瑾把研发交付包送来核验。分身按组织标准检查开工条件。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a4_delivery()}]},
+  {k:'twin', who:'宋瑾的分身', text:'发现两处不一致并给出修改建议', say:'这次发现的是两份材料之间的矛盾和一个缺字段。建议直接对应到原文，便于宋瑾核对修改。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a4_delivery({phase:'issues'})}]},
+  {k:'me', who:'宋瑾', text:'采纳修改，核验通过，发布给许朗', say:'采纳修改后，交付包重新核验通过。是否发布给研发，仍由宋瑾本人决定。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a4_delivery({phase:'publish'})}]},
+  {k:'twin', who:'许朗的分身', text:'按许朗的技术储备做难度分层', say:'同一份组织要求，到了许朗这里会按许朗自己的积累拆成不同难度。测试账号的时间风险也提前露出来。', view:[{cap:'<b>许朗</b>PC', r:()=>a4_plan()}]},
+  {k:'me', who:'许朗', text:'接受，并附说明“测试账号需要讨论”', say:'许朗接受任务，同时把需要讨论的问题带上。承接不意味着风险已经解决。', view:[{cap:'<b>许朗</b>PC', r:()=>a4_plan({armed:true})}]},
+ ]},
+
+{tab:'五', name:'共创', title:'带着依据讨论，把议定落成行动', judge:'书记员先摆出已知事实；分歧附出处提醒，由人判断；行动项缺什么补什么；各方确认后发起人最终确认。',
+ points:['开始前大家看到同一份事实。','分歧提醒附原文和日期，不替人裁决。','没回复不等于同意；共创以可执行的任务为终点。'],
+ qa:[['书记员能看大家的私人准备吗？','不能，只用本次确认可分享的内容。']],
+ setting:['11/26，宋瑾发起共创，参与人：宋瑾、林知、许朗、孟珂、周宁。'],
+ steps:[
+  {k:'me', who:'周宁', text:'确认分享王主任口头意见的摘要', say:'参与讨论前，周宁先确定分享范围。群组得到的是周宁确认过的摘要。', view:[{cap:'<b>周宁</b>手机', r:()=>a5_share()}]},
+  {k:'twin', who:'书记员', text:'整理讨论准备单', say:'书记员先把共同事实、建议和待决定的问题摆出来。未完成的承诺也跟着进入讨论。', view:[{cap:'<b>共创</b>PC 群组', r:()=>a5_group()}]},
+  {k:'scene', who:'许朗', text:'提议先导出数据做独立演示', say:'许朗提出一个更快的办法。接下来要核对这个办法是否符合已经确认的约束。', view:[{cap:'<b>共创</b>PC 群组', r:()=>a5_group({phase:'proposal'})}]},
+  {k:'twin', who:'书记员', text:'附出处提醒：与“不直连业务库”冲突', say:'提醒带着原文和日期，大家可以当场查证。分歧怎样处理，留给参与人判断。', view:[{cap:'<b>共创</b>PC 群组', r:()=>a5_group({phase:'conflict'})}]},
+  {k:'twin', who:'书记员', text:'孟珂提出沙箱方案，整理议定草案', say:'孟珂提出另一条可行路径，林知同意。书记员把讨论收拢成一份等待本人确认的草案。', view:[{cap:'<b>共创</b>PC 群组', r:()=>a5_group({phase:'draft'})}]},
+  {k:'twin', who:'书记员', text:'检查行动项，补评判标准和期限', say:'行动项要能交给人执行。缺标准补标准，缺期限补期限，再交给相关本人确认。', view:[{cap:'<b>共创</b>PC 群组', r:()=>a5_group({phase:'actions'})}]},
+  {k:'me', who:'许朗、孟珂', text:'各自在手机上确认', say:'许朗和孟珂分别确认与自己有关的内容。未回复仍然是待确认，不能当成同意。', view:[{cap:'<b>许朗</b>手机', r:()=>a5_confirm()},{cap:'<b>孟珂</b>手机',r:()=>a5_confirm({person:'meng'})}]},
+  {k:'me', who:'宋瑾', text:'最终确认，转为正式任务', say:'各方确认之后，由宋瑾作最后确认。议定随之落成正式任务，后续仍按任务规则承接。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a5_group({phase:'final'})}]},
+ ]},
+
+{tab:'六', name:'继承', title:'换人了，事情接着做', judge:'交接由分身整理、双方确认；接任人能追溯依据、接上承诺和风险；权限跟岗位走，私人内容不随交接移交。',
+ points:['平时的工作记录就是交接材料。','接任人用自己的分身和自己的权限。','知识可以继承，任务还要本人点头。'],
+ qa:[['宋瑾的个人笔记会给陈默吗？','不会，除非宋瑾本人选择贡献。']],
+ setting:['12/1，宋瑾调到政数局 AIP 二期，陈默接任，12/5 生效。'],
+ steps:[
+  {k:'me', who:'韩立', text:'批准岗位变动，预览权限调整', say:'人员变动先由有权的人批准，权限按生效日期调整。工作内容和岗位授权一起交接。', view:[{cap:'<b>韩立</b>管理端', r:()=>a6_authorize()}]},
+  {k:'twin', who:'宋瑾的分身', text:'整理八类交接内容，个人笔记不纳入', say:'平时留下的工作记录已经能组成交接包。私人笔记留在宋瑾自己的区域。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a6_handover()}]},
+  {k:'me', who:'宋瑾', text:'确认交接范围', say:'分身整理之后，宋瑾核对交出去的范围。原来的判断和承诺都继续保留署名。', view:[{cap:'<b>宋瑾</b>PC', r:()=>a6_handover({phase:'confirm'})}]},
+  {k:'me', who:'陈默', text:'确认接收', say:'陈默确认接收这份工作背景。陈默使用自己的分身和自己的岗位授权继续查询。', view:[{cap:'<b>陈默</b>PC', r:()=>a6_handover({phase:'receive'})}]},
+  {k:'twin', who:'陈默的分身', text:'回答“为什么不直连委内业务库”', say:'接任人可以追问当时为什么这样做。回答能一路追到原始要求和后来的议定。', view:[{cap:'<b>陈默</b>PC', r:()=>a6_answer()}]},
+  {k:'me', who:'陈默', text:'逐项承接待办，演示日期选协商', say:'知道来龙去脉之后，任务还要逐项承接。演示时间需要先和客户确认，陈默选择协商。', view:[{cap:'<b>陈默</b>PC', r:()=>a6_takeover()}]},
+ ]},
+
+{tab:'收束 A', name:'组织任务树', title:'六幕的工作，组织一张图看清', judge:'管理者看到任务、状态和已共享的交付，看不到任何人的个人区；受阻节点直接看到原因。',
+ points:['不需要层层汇报，受阻原因直接可见。'], qa:[], setting:['保留 v0.7 管理端图谱的深色放射结构，可下钻。'],
+ steps:[
+  {k:'scene', who:'韩立', text:'组织任务树全景', say:'管理者从这里看到工作如何连接、哪里受阻。已经共享的任务和交付足以支撑判断。', view:[{cap:'<b>韩立</b>管理端', r:()=>z1_tree()}]},
+  {k:'scene', who:'韩立', text:'下钻“首版 Demo 研发”', say:'点进研发任务，约定、标准和依据都在一起。管理者可以从状态继续核对具体工作。', view:[{cap:'<b>韩立</b>管理端', r:()=>z1_tree({detail:true})}]},
+ ]},
+
+{tab:'收束 B', name:'组织能力', title:'工作沉淀成每个分身都能调用的能力', judge:'组织能力来自真实工作，经本人贡献、有人背书、保留署名，会失效；各分身只调用本岗位有权使用的部分。',
+ points:['不是把所有资料倒进一个库。'], qa:[], setting:[],
+ steps:[
+  {k:'scene', who:'韩立', text:'组织能力清单与调用记录', say:'这些工作留下了能被继续调用的标准、方法和口径。每一项都保留来源、署名和使用记录。', view:[{cap:'<b>韩立</b>管理端', r:()=>z2_capabilities()}]},
+  {k:'scene', who:'韩立', text:'候选能力：贡献 → 背书 → 署名发布', say:'许朗选择贡献的经验目前还是候选。经过负责人背书，再以许朗的署名发布，才成为组织能力。', view:[{cap:'<b>韩立</b>管理端', r:()=>z2_capabilities({phase:'candidate'})}]},
+  {k:'scene', who:'', text:'让信息流动，让记忆沉淀，让边界清晰', say:'要求变了，组织能力也要保留替代关系，让下一次查询拿到有效版本。让信息流动，让记忆沉淀，让边界清晰。', view:[{cap:'<b>韩立</b>管理端', r:()=>z2_capabilities({phase:'replacement'})}]},
+ ]},
+];
+
+/* =====================================================================
+   六、播放引擎
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const rig = $('#rig'), stage = $('#stage'), guide = $('#guide');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let A = 0, S = 0, timer = null, revealStart = null, paused = false, revealing = false;
+
+$('#acts').innerHTML = ACTS.map((a,i)=>`<button data-a="${i}"><b>${a.tab}</b>${a.name}</button>`).join('');
+$('#acts').addEventListener('click', e=>{const b=e.target.closest('[data-a]'); if(b) goTo(+b.dataset.a,0);});
+$('#replay').onclick = ()=>goTo(A,0);
+
+function goTo(a,s){ A=a; S=s; history.replaceState(null,'',`#${a}-${s}`); render(); }
+function step(){ return ACTS[A].steps[S]; }
+
+function render(){
+  clearInterval(timer); clearTimeout(revealStart); timer=null; paused=false;
+  const st = step();
+  rig.innerHTML = st.view.map(v=>`<div class="dev">${v.r()}${v.cap?`<div class="cap">${v.cap}</div>`:''}</div>`).join('');
+  document.querySelectorAll('#acts button').forEach((b,i)=>b.setAttribute('aria-current', i===A));
+  rig.querySelectorAll('[data-go]').forEach(b=>{ if(st.k==='me') b.classList.add('armed'); });
+  renderGuide(); fit();
+  if(st.k==='twin') startReveal(); else revealing=false;
+}
+
+function startReveal(){
+  const items=[...rig.querySelectorAll('.reveal > *')];
+  if(reduce || !items.length){ revealing=false; return; }
+  items.forEach(el=>el.classList.add('pending')); revealing=true; let i=0;
+  const tick=()=>{ if(paused) return; const el=items[i++]; if(el) el.classList.remove('pending'); if(i>=items.length){ clearInterval(timer); revealing=false; renderFoot(); } };
+  revealStart=setTimeout(tick,250); timer=setInterval(tick,700); renderFoot();
+}
+function finishReveal(){ clearInterval(timer); clearTimeout(revealStart); rig.querySelectorAll('.pending').forEach(el=>el.classList.remove('pending')); revealing=false; renderFoot(); }
+
+function next(){
+  if(revealing){ finishReveal(); return; }
+  const act=ACTS[A];
+  if(S<act.steps.length-1) goTo(A,S+1); else if(A<ACTS.length-1) goTo(A+1,0);
+}
+function prev(){ if(S>0) goTo(A,S-1); else if(A>0) goTo(A-1,ACTS[A-1].steps.length-1); }
+
+const KIND = {twin:'分身', me:'本人', scene:'画面'};
+function renderGuide(){
+  const act=ACTS[A], st=step();
+  const list = act.steps.map((s,i)=>`<li class="${i===S?'now':i<S?'done':''}" data-s="${i}"><span class="tag ${s.k}">${KIND[s.k]}</span><span>${s.who?`<span class="who">${s.who}</span>`:''}${s.text}</span></li>`).join('');
+  const sec = (t,body)=> body ? `<details><summary>${t}</summary><div class="body">${body}</div></details>` : '';
+  guide.innerHTML = `<div class="g-scroll">
+      <div class="g-act">${A===0?'序幕':A>6?act.tab:`第${act.tab}幕`} · ${act.name}</div>
+      <h2 class="g-title">${act.title}</h2>
+      <p class="g-judge">${act.judge}</p>
+      <p class="g-say"><span class="tag ${st.k}">${KIND[st.k]}</span>${st.say || '<span style="color:var(--faint);font-size:14px">讲稿待写</span>'}</p>
+      <ol class="g-steps">${list}</ol>
+      <div class="g-more">
+        ${sec('本幕要点', act.points.length?`<ul>${act.points.map(p=>`<li>${p}</li>`).join('')}</ul>`:'')}
+        ${sec('预判提问', act.qa.length?`<dl class="qa">${act.qa.map(([q,a])=>`<dt>${q}</dt><dd>${a}</dd>`).join('')}</dl>`:'')}
+        ${sec('演示设定', act.setting.length?`<ul>${act.setting.map(p=>`<li>${p}</li>`).join('')}</ul>`:'')}
+      </div></div><div class="g-foot" id="foot"></div>`;
+  guide.querySelectorAll('[data-s]').forEach(li=>li.onclick=()=>goTo(A,+li.dataset.s));
+  renderFoot();
+}
+function renderFoot(){
+  const foot=$('#foot'); if(!foot) return;
+  const act=ACTS[A], st=step(), last = A===ACTS.length-1 && S===act.steps.length-1;
+  const label = revealing ? '显示全部' : st.k==='me' && rig.querySelector('[data-go]') ? '代为点击' : S===act.steps.length-1 ? '下一幕' : '下一步';
+  foot.innerHTML = `<span class="count">${S+1} / ${act.steps.length}</span>
+    ${st.k==='twin'&&revealing?`<button id="pause">${paused?'继续':'暂停'}</button>`:''}
+    <button id="prev" ${A===0&&S===0?'disabled':''}>上一步</button>
+    <button id="next" class="next ${st.k==='me'&&!revealing?'me':''}" ${last?'disabled':''}>${label}</button>`;
+  $('#prev').onclick=prev; $('#next').onclick=next;
+  const p=$('#pause'); if(p) p.onclick=togglePause;
+}
+function togglePause(){ paused=!paused; renderFoot(); }
+
+function fit(){
+  const W=stage.clientWidth-40, H=stage.clientHeight-32;
+  rig.style.setProperty('--desk-width',`${Math.min(1040,W)}px`);
+  rig.style.setProperty('--device-height',`${Math.min(720,H-34)}px`);
+  rig.style.setProperty('--phone-height',`${Math.min(780,H-34)}px`);
+  rig.style.transform='translate(-50%,-50%) scale(1)';
+  const w=rig.offsetWidth, h=rig.offsetHeight;
+  const scale=Math.min(W/w,H/h,1);
+  rig.style.transform=`translate(-50%,-50%) scale(${scale})`;
+}
+addEventListener('resize', fit);
+
+rig.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ') && e.target.closest('[data-drill]')){e.preventDefault();e.stopPropagation();goTo(7,1);}});
+rig.addEventListener('click', e=>{
+  const s=e.target.closest('[data-src]'); if(s){ openSrc(s.dataset.src); return; }
+  const drill=e.target.closest('[data-drill]'); if(drill){goTo(7,1);return;}
+  const cap=e.target.closest('[data-capability]'); if(cap){goTo(8,cap.dataset.capability==='candidate'?1:2);return;}
+  if(e.target.closest('[data-go]') && step().k==='me'){
+    const result=e.target.closest('[data-result]');
+    if(result){
+      const view=result.dataset.result==='discussion'?a5_group({phase:'done'}):a6_takeover({done:true});
+      rig.querySelector('.dev').innerHTML=view+`<div class="cap"><b>${step().who}</b>PC</div>`;
+      fit();renderFoot();return;
+    }
+    next();
+  }
+});
+
+const dlg=$('#dlg');
+function openSrc(id){
+  const d=SRC[id];
+  dlg.innerHTML=`<div class="dl-h"><small>出处</small><h3>${d.title}</h3><div class="meta">${d.meta}</div></div>
+    <div class="dl-b">${d.body.map((p,i)=>`<p>${d.mark.includes(i)?`<mark>${p}</mark>`:p}</p>`).join('')}</div>
+    <div class="dl-f"><span>高亮为本次引用的段落</span><button autofocus>关闭</button></div>`;
+  dlg.querySelector('button').onclick=()=>dlg.close();
+  dlg.showModal();
+}
+dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
+
+addEventListener('keydown', e=>{
+  if(dlg.open || e.metaKey || e.ctrlKey) return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); next(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); prev(); }
+  else if(e.key===' '){ e.preventDefault(); if(revealing) togglePause(); else next(); }
+  else if(e.key==='r'||e.key==='R') goTo(A,0);
+  else if(/^[1-9]$/.test(e.key) && +e.key-1<ACTS.length) goTo(+e.key-1,0);
+  else if(e.key==='0') goTo(0,0);
+});
+
+const m=location.hash.match(/^#(\d+)-(\d+)$/);
+if(m && ACTS[+m[1]] && ACTS[+m[1]].steps[+m[2]]) { A=+m[1]; S=+m[2]; }
+render();
+</script>
+</body>
+</html>
